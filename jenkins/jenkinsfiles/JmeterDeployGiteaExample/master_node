@@ -1,2 +1,2 @@
-def swarmNode="172.27.193.132"
+def swarmNode="${SWARM_MASTER_DEPLOY_NODE}"
 return [swarmNode+":selected:disabled"]

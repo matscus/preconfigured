@@ -11,7 +11,7 @@ def driver = Class.forName('org.postgresql.Driver').newInstance() as Driver
 def props = new Properties()
 props.setProperty("user","${creds.username}") 
 props.setProperty("password", "${creds.password}")
-def conn = driver.connect("jdbc:postgresql://172.27.192.59:5432/runs", props) 
+def conn = driver.connect("jdbc:postgresql://${POSTHRESQL_NODE}:5432/runs", props) 
 def sql = new Sql(conn)
 def id = 0
 def rows = sql.rows("select max(id) from truns").each { row ->
