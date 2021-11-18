@@ -261,7 +261,7 @@ def PushRun(startTime,endTime,scenarios){
         def sc = jsonParse(scns.toString())
         def data = groovy.json.JsonOutput.toJson(
             project: "${SCRIPTS_PATH}", 
-            grafanalink: "http://${GRAFANA_HOST}:3000/d/In_The_Bus/test_overview?orgId=1&refresh=10s&from=${startTimestamp}&to=${endTimestamp}", 
+            grafanalink: "http://${GRAFANA_NODE}:3000/d/In_The_Bus/test_overview?orgId=1&refresh=10s&from=${startTimestamp}&to=${endTimestamp}", 
             description: "${TEST_DESCRIPTION}",
             scenarios:sc
         )
@@ -269,7 +269,7 @@ def PushRun(startTime,endTime,scenarios){
         def message = groovy.json.JsonOutput.toJson(id: "${BUILD_NUMBER}" as int , starttime: startTimestamp, endtime: endTimestamp, data:dt)
         println("Put message")
         println(message)
-        def endpoint = "http://${AMMUNITION_HOST}:8090/api/v1/runs/new"
+        def endpoint = "http://${AMMUNITION_NODE}:8090/api/v1/runs/new"
         def httpClient = createAcceptCrt()
         def httppost = new HttpPost(endpoint)
         httppost.setEntity(new StringEntity(message.toString()))
