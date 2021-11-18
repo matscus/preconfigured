@@ -5,7 +5,7 @@ Description=Ammunition
 LimitNOFILE=65536
 LimitNOFILESoft=65536
 User=root
-ExecStart=/opt/ammunition/ammunition --host ${POSTHRESQL_HOST} --dbname ammunition
+ExecStart=/opt/ammunition/ammunition --host ${POSTHRESQL_NODE} --dbname ammunition
 
 [Install]
 WantedBy=multi-user.target

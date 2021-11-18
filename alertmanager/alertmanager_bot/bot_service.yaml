@@ -6,7 +6,7 @@ networks:
 
 services:
   alertmanager_bot:
-    image: ${REGISTRY_HOST}/alert_bot
+    image: ${REGISTRY_NODE}/alert_bot
     volumes:
       - ./config/:/opt/alertmanagerbot/
       - ./config/config.yaml:/config.yaml  
