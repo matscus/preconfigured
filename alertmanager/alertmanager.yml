@@ -7,7 +7,7 @@ route:
 receivers:
 - name: 'web.hook'
   webhook_configs:
-  - url: 'http://${ALERT_MANAGER_BOT_HOST}/alert/${TELEGRAM_CHAT_ID}'
+  - url: 'http://${ALERT_MANAGER_BOT_NODE}/alert/${TELEGRAM_CHAT_ID}'
 inhibit_rules:
   - source_match:
       severity: 'critical'
