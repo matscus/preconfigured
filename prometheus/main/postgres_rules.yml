@@ -1,0 +1,73 @@
+groups:
+  - name: pgstat
+    rules:
+    - record: postgres:pg_stat_database_deadlocks:rate1m
+      expr: rate(pg_stat_database_deadlocks[1m]) 
+    - record: postgres:pg_stat_database_conflicts_confl_deadlock:rate1m
+      expr: rate(pg_stat_database_conflicts_confl_deadlock[1m])
+    - record: postgres:pg_stat_database_conflicts:rate1m
+      expr: rate(pg_stat_database_conflicts[1m])
+    - record: postgres:pg_stat_database_conflicts_confl_bufferpin:rate1m
+      expr: rate(pg_stat_database_conflicts_confl_bufferpin[1m])
+    - record: postgres:pg_stat_database_conflicts_confl_snapshot:rate1m
+      expr: rate(pg_stat_database_conflicts_confl_snapshot[1m])
+    - record: postgres:pg_stat_database_conflicts_confl_tablespace:rate1m
+      expr: rate(pg_stat_database_conflicts_confl_tablespace[1m])
+    - record: postgres:pg_stat_database_blks_hit:sumbyrate1
+      expr: sum(rate(pg_stat_database_blks_hit[1m]))by(instance,database)
+    - record: postgres:pg_stat_database_blks_read:sumbyrate1
+      expr: sum(rate(pg_stat_database_blks_read[1m]))by(instance,database)
+    - record: postgres:pg_stat_database_blk_read_time:rate1m
+      expr: rate(pg_stat_database_blk_read_time[1m])
+    - record: postgres:pg_stat_database_blk_write_time:rate1m
+      expr: rate(pg_stat_database_blk_write_time[1m])
+    - record: postgres:pg_stat_database_xact_commit:sumbyirate1m
+      expr: sum(irate(pg_stat_database_xact_commit[1m]))by(instance,database)
+    - record: postgres:pg_stat_database_xact_rollback:sumbyirate1m
+      expr: sum(irate(pg_stat_database_xact_rollback[1m]))by(instance,database)
+    - record: postgres:pg_stat_database_temp_bytes:sum
+      expr: sum(pg_stat_database_temp_bytes)by(instance,database)
+    - record: postgres:pg_stat_database_tup_inserted:sum
+      expr: sum(pg_stat_database_tup_inserted)by(instance,database)
+    - record: postgres:pg_stat_database_tup_fetched:sum
+      expr: sum(pg_stat_database_tup_fetched)by(instance,database)
+    - record: postgres:pg_stat_database_temp_files:sum
+      expr: sum(pg_stat_database_temp_files)by(instance,database)
+    - record: postgres:pg_stat_database_tup_updated:sum
+      expr: sum(pg_stat_database_tup_updated)by(instance,database)
+  - name: pgstat_statements
+    rules:
+    - record: postgres:pg_stat_statements_mean_exec_time:topk20_increase10m
+      expr:   topk(20,increase(pg_stat_statements_mean_exec_time[10m])) 
+    - record: postgres:pg_stat_statements_calls:topk20_increase10m
+      expr:    topk(20,increase(pg_stat_statements_calls[10m]))
+    - record: postgres:pg_stat_statements_rows:sum_increase1m
+      expr:    sum(increase(pg_stat_statements_rows[1m])) by (datname,instance)
+    - record: postgres:pg_stat_statements_total_exec_time:sum_rate1m
+      expr:    sum(rate(pg_stat_statements_total_exec_time[1m])) by (datname,instance)  
+    - record: postgres:pg_stat_statements_max_exec_time:sum_rate1m
+      expr:     sum(rate(pg_stat_statements_max_exec_time[1m])) by (datname,instance) 
+    - record: postgres:pg_stat_statements_mean_exec_time:sum_rate1m
+      expr:    sum(rate(pg_stat_statements_mean_exec_time[1m])) by(datname,instance) 
+    - record: postgres:pg_stat_statements_stddev_exec_time:sum_rate1m
+      expr:    sum(rate(pg_stat_statements_stddev_exec_time[1m])) by (datname,instance) 
+    - record: postgres:pg_stat_statements_min_plan_time:sum_rate1m
+      expr:    sum(rate(pg_stat_statements_min_plan_time[1m])) by (datname,instance)  
+    - record: postgres:pg_stat_statements_shared_blks_hit:sum_increase1m
+      expr:    sum(increase(pg_stat_statements_shared_blks_hit[1m])) by(datname,instance) 
+    - record: postgres:pg_stat_statements_shared_blks_read:sum_increase1m
+      expr:     sum(increase(pg_stat_statements_shared_blks_read[1m])) by (datname,instance) 
+    - record: postgres:pg_stat_statements_shared_blks_dirtied:sum_increase1m
+      expr:     sum(increase(pg_stat_statements_shared_blks_dirtied[1m])) by (datname,instance) 
+    - record: postgres:pg_stat_statements_local_blks_hit:sum_increase1m
+      expr:     sum(increase(pg_stat_statements_local_blks_hit[1m])) by (datname,instance) 
+    - record: postgres:pg_stat_statements_local_blks_read:sum_increase1m
+      expr:    sum(increase(pg_stat_statements_local_blks_read[1m])) by (datname,instance) 
+    - record: postgres:pg_stat_statements_blk_write_time:sum_increase1m
+      expr:    sum(increase(pg_stat_statements_blk_write_time[1m])) by (datname,instance) 
+    - record: postgres:pg_stat_statements_temp_blks_read:sum_increase1m
+      expr:   sum(increase(pg_stat_statements_temp_blks_read[1m])) by (datname,instance) 
+    - record: postgres:pg_stat_statements_local_blks_dirtied:sum_increase1m
+      expr:   sum(increase(pg_stat_statements_local_blks_dirtied[1m])) by (datname,instance) 
+    - record: postgres:pg_stat_statements_temp_blks_written:sum_increase1m
+      expr:   sum(increase(pg_stat_statements_temp_blks_written[1m])) by (datname,instance) 

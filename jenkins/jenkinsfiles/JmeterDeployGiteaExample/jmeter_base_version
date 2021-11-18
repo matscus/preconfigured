@@ -1,0 +1,17 @@
+def getTags() {
+    def tags = []
+    def endpoint = REGISTRY_URL + "/v2/jmeter_base/tags/list"
+    def conn = new URL(endpoint).openConnection()
+    def response = new groovy.json.JsonSlurper().parseText(conn.content.text)
+    def i =0
+    response.tags.each {
+        if (i == 0){
+                 tags.add(it + ':selected')
+                 i++
+        }else{ 
+                 tags.add(it)
+        } 
+    }
+    return tags
+}
+return getTags()

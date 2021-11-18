@@ -1,0 +1,9 @@
+[Unit]
+Description=Prometheus
+
+[Service]
+User=prometheus
+ExecStart=/opt/prometheus_data/bin/prometheus/prometheus --web.enable-lifecycle --web.enable-admin-api  --storage.tsdb.path=/opt/prometheus_data/data --storage.tsdb.retention.time 100d --config.file=/opt/prometheus_data/bin/prometheus/prometheus.yml --enable-feature=remote-write-receiver
+
+[Install]
+WantedBy=multy-user.target

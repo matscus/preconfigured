@@ -1,0 +1,7 @@
+{
+    "name":"Prometheus_scraper_storage",
+    "type":"prometheus",
+    "url":"http://${PROMETHEUS_SCRAPER_HOST}:9090",
+    "access":"proxy",
+    "basicAuth":false
+}

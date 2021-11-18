@@ -1,0 +1,117 @@
+groups:
+  - name: haproxy_backend
+    rules:
+    - record:  haproxy:backend_up:count
+      expr: count(haproxy_backend_up == 1) by(instance,backend)
+    - record:  haproxy:backend_down:count
+      expr: count(haproxy_backend_up == 0) by(instance,backend)
+    - record: haproxy:backend_http_responses_total:sum
+      expr:    sum (irate(haproxy_backend_http_responses_total[1m])) by (instance,code,backend) 
+    - record:  haproxy:backend_http_responses:sum_irate1m
+      expr:  sum(irate(haproxyd_backend_http_responses_total[1m])) by (instance,backend,code)
+    - record:  haproxy:backend_bytes_in_total:sum_irate1m
+      expr:      sum (irate(haproxy_backend_bytes_in_total[1m])*8) by(instance,backend)
+    - record:  haproxy:backend_bytes_out_total:sum_irate1m
+      expr:     sum (irate(haproxy_backend_bytes_out_total[1m])*8) by(instance,backend)
+    - record:  haproxy:backend_connections_total:sum_irate1m
+      expr:  sum(irate(haproxy_backend_connections_total[1m])) by (instance,backend)
+    - record:  haproxy:backend_connections_error_total:sum_irate1m
+      expr:   sum(irate(haproxy_backend_connection_errors_total[1m])) by (instance,backend)
+    - record:  haproxy:backend_response_error_total:sum_irate1m
+      expr:    sum(irate(haproxy_backend_response_errors_total[1m])) by (instance,proxy,backend)
+    - record:  haproxy:backend_redispatch_warnings_total:sum_irate1m
+      expr:    sum(irate(haproxy_backend_redispatch_warnings_total[1m]))by(instance,proxy)
+    - record:  haproxy:backend_response_retry_warnings_total:sum_irate5m
+      expr:     sum(irate(haproxy_backend_retry_warnings_total[1m])) by (instance,proxy)
+    - record:  haproxy:backend_response_current_queue:sum
+      expr:     sum(haproxy_backend_current_queue) by (instance,proxy)
+    - record:  haproxy:backend_response_current_sessions:sum
+      expr:      sum(haproxy_backend_current_sessions) by (instance,backend)
+    - record:  haproxy:backend_response_current_sessions_rate:sum
+      expr:      sum(haproxy_backend_current_session_rate) by (instance)
+    - record:  haproxy:backend_response_max_queue:sum_irate1m
+      expr:       sum(irate(haproxy_backend_max_queue[1m]))by(instance)
+    - record:  haproxy:backend_response_current_queue:sum_irate1m
+      expr:       sum(irate(haproxy_backend_current_queue[1m]) )by(instance)
+    - record:  haproxy:backend_weight:sum
+      expr:        sum(haproxy_backend_weight)by(instance,proxy)
+    - record:  haproxy:backend_max_sessions:sum
+      expr:     sum by(backend)(haproxy_backend_max_sessions)
+    - record:  haproxy:backend_limit_sessions:sum
+      expr:     sum by(backend)(haproxy_backend_limit_sessions)
+    - record:  haproxy:backend_max_session_rate:sum
+      expr:     sum by(backend)(haproxy_backend_max_session_rate)
+  - name: haproxy_frontend
+    rules:
+    - record: haproxy:frontend_current_session_rate:sum
+      expr:     sum(haproxy_frontend_current_session_rate) by (instance,frontend)
+    - record: haproxy:frontend_http_responses_total:sum
+      expr:    sum (irate(haproxy_frontend_http_responses_total[1m])) by (instance,code,frontend) 
+    - record: haproxy:frontend_http_bytes_in_total:sum_irate1m
+      expr:     sum(irate(haproxy_frontend_bytes_in_total[1m])*8) by (instance,frontend)
+    - record: haproxy:frontend_http_bytes_out_total:sum_irate1m
+      expr:     sum(irate(haproxy_frontend_bytes_out_total[1m])*8) by (instance,frontend)
+    - record: haproxy:frontend_http_requests_total:irate1m
+      expr:     irate(haproxy_frontend_http_requests_total[5m])
+    - record: haproxy:frontend_http_requests_errors_total:irate1m
+      expr:      irate(haproxy_frontend_request_errors_total[5m])
+    - record:  haproxy:frontend_response_error_total:sum_irate1m
+      expr:    sum(irate(haproxy_frontend_response_errors_total[1m])) by (instance,proxy,frontend)
+    - record: haproxy:frontend_http_requests_denied:irate1m
+      expr:      irate(haproxy_frontend_requests_denied_total[5m])
+    - record: haproxy:frontend_current_sessions:sum
+      expr:     sum(haproxy_frontend_current_sessions)by(instance,frontend)
+    - record: haproxy:frontend_connections_total:sum_irate1m
+      expr:     sum(irate(haproxy_frontend_connections_total[1m]))by (instance,frontend)
+    - record: haproxy:frontend_http_requests_total:sum_irate1m
+      expr:     sum(irate(haproxy_frontend_http_requests_total[1m])) by (instance)
+    - record: haproxy:frontend_http_requestst_errors_total:sum_irate1m
+      expr:     sum(irate(haproxy_frontend_request_errors_total[1m])) by (instance)
+    - record: haproxy:frontend_http_requestst_denied_total:sum_irate1m
+      expr:     sum(irate(haproxy_frontend_requests_denied_total[1m])) by (instance,proxy)
+    - record: haproxy:frontend_max_sessions:sum
+      expr:     sum(haproxy_frontend_max_sessions) by (frontend)
+    - record: haproxy:frontend_limit_sessions:sum
+      expr:     sum(haproxy_frontend_limit_sessions) by (frontend)
+    - record: haproxy:frontend_max_session_rate:sum
+      expr:     sum(haproxy_frontend_max_session_rate) by (frontend)
+    - record: haproxy:frontend_limit_session_rate:sum
+      expr:     sum(haproxy_frontend_limit_session_rate) by (frontend)
+  - name: haproxy_server
+    rules:
+    - record: haproxy:server_bytes_in_total:sum_irate1m
+      expr:     sum(irate(haproxy_server_bytes_in_total[1m])*8) by(server,service)
+    - record: haproxy:server_bytes_out_total:sum_irate1m
+      expr:     sum(irate(haproxy_server_bytes_out_total[1m])*8) by(server,service)
+    - record: haproxy:server_connections_total:sum
+      expr:     sum(irate(haproxy_server_connections_total[1m])) by(server,service)
+    - record: haproxy:server_max_queue:sum
+      expr:     sum(irate(haproxy_server_max_queue[1m]))by(server,service)
+    - record: haproxy:server_current_queue:sum_irate1m
+      expr:    sum(irate(haproxy_server_current_queue[1m]))by(server,service)
+    - record: haproxy:server_http_responses_total:sum_irate1m
+      expr:     sum(irate(haproxy_server_http_responses_total[1m]))by(server,route,code)       
+    - record: haproxy:server_retry_warnings_total:sum_irate1m
+      expr:    sum(irate(haproxy_server_retry_warnings_total[1m]))by(server,route)  
+    - record: haproxy:server_redispatch_warnings_total:sum_irate1m
+      expr:     sum(haproxy_server_redispatch_warnings_total)by(server,route)
+    - record: haproxy:server_response_errors_total:sum_irate1m
+      expr:     sum(irate(haproxy_server_response_errors_total[1m]))by(server,route)
+    - record: haproxy:server_current_sessions:sum
+      expr:      sum(haproxy_server_current_sessions)by(server,route)
+    - record: haproxy:server_current_sessions_rate:sum
+      expr:      sum(haproxy_server_current_session_rate)by(server,route)
+    - record: haproxy:server_max_session_rate:sum
+      expr:      sum(haproxy_server_max_session_rate)by(server,route)
+    - record: haproxy:server_max_sessions:sum
+      expr:      sum(haproxy_server_max_sessions)by(server,route)
+    - record: haproxy:server_downtime_seconds_total:sum
+      expr:     sum(haproxy_server_downtime_seconds_total)by(server,route)
+    - record: haproxy:server_check_failures_total:sum
+      expr:    sum(increase(haproxy_server_check_failures_total[1m]) )by(server,route)
+    - record: haproxy:server_connection_errors_total:sum_irate1m
+      expr:     sum(irate(haproxy_server_connection_errors_total[1m]))by(server,route)
+    - record: haproxy:server_server_weight:sum
+      expr:     sum(haproxy_server_weight)by(server)
+    - record: haproxy:haproxy_server_up:sum
+      expr:     sum(haproxy_server_up)by(server,route)      

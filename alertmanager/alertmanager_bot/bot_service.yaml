@@ -1,0 +1,26 @@
+version: '3.3'
+
+networks:
+  swarm_net:
+    external: true
+
+services:
+  alertmanager_bot:
+    image: ${REGISTRY_HOST}/alert_bot
+    volumes:
+      - ./config/:/opt/alertmanagerbot/
+      - ./config/config.yaml:/config.yaml  
+    ports:
+      - 9087:9087
+    networks:
+      - swarm_net
+    deploy:
+        replicas: 1
+        resources:
+          limits:
+            cpus: "0.1"
+            memory: '100M'
+        placement: 
+            constraints: [node.role != manager]
+    labels:
+      org.label-schema.group: "monitoring"

@@ -1,0 +1,178 @@
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.conn.ssl.*;
+import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.HttpClients;
+import org.apache.http.ssl.SSLContextBuilder;
+import javax.net.ssl.*;
+import java.io.IOException;
+import java.security.KeyManagementException;
+import java.security.KeyStoreException;
+import java.security.NoSuchAlgorithmException;
+import org.apache.http.util.EntityUtils;
+import org.apache.http.client.methods.CloseableHttpResponse;
+import jenkins.model.*;
+
+def style ='<head><style>table.bus {font-family: arial, sans-serif;border-collapse: collapse;width: 100%;}td, th {border: 1px solid #dddddd;text-align: center;padding: 8px;}tr:nth-child(even) {background-color: #dddddd;}</style></head>'
+def foo = '<table class="bus">'
+def bar = '</table>'
+def buf_result = style << foo
+buf_result << '<tr>'
+buf_result << '<th>Scenario</th>'
+buf_result << '<th>TPS</th>'
+buf_result << '<th>SLA</th>'
+buf_result << '<th>Rump-Up Time</th>'
+buf_result << '<th>Rump-Up Steps Count</th>'
+buf_result << '<th>Test Duration</th>'
+buf_result << '<th>Replicas</th>'
+buf_result << '<th>CPU</th>'
+buf_result << '<th>MEM</th>'
+buf_result << '</tr>'
+
+def creds = com.cloudbees.plugins.credentials.CredentialsProvider.lookupCredentials(
+  com.cloudbees.plugins.credentials.common.StandardUsernameCredentials.class, Jenkins.instance, null, null ).find{
+    it.id ==  'bitbucket_user'}
+def USERNAME = creds.username
+def PASSWORD = creds.password
+
+def uri = new URI("${REPOSITORY_URL}")
+def addr = getAddr(uri,true)
+def temp = uri.getPath().split("/").takeRight(2)
+def project = temp[0]
+def repos = temp[1].replaceAll(".git","")
+
+def HttpClients = createAcceptCrt()
+def endpoint = ""
+if ("${SCRIPTS_PATH}" =="/"){
+    endpoint = addr + "/bitbucket/rest/api/1.0/projects/"+project+"/repos/"+repos+"/raw/profile.csv"
+}else{
+    endpoint = addr + "/bitbucket/rest/api/1.0/projects/"+project+"/repos/"+repos+"/raw/${SCRIPTS_PATH}/profile.csv"
+}
+def httpget = new HttpGet(endpoint)
+httpget.addHeader("Authorization", "Basic "+"${USERNAME}:${PASSWORD}".bytes.encodeBase64().toString());
+def response = HttpClients.execute(httpget)
+def entity = response.getEntity()
+def result = EntityUtils.toString(entity)
+
+switch ("${PROFILE_TYPE}"){
+    case "csv":
+        buf_result  << getCSVTable(result) << bar
+        break
+    case "custom":
+        buf_result << getCustomTable() << bar
+        break
+}
+def getCSVTable(raw){
+    def scripts = []
+    "${SCRIPTS}".split(",").each { scenario ->
+        scripts.add(scenario.replaceAll(~/\.[^\.]+$/, '').toLowerCase())
+    }
+    def temp_buf = "" << ""
+    def rows = raw.split("\n")
+    def profiles = [:]
+    def iter =0 
+    def heads = []
+    rows.each{
+        def data = it.split(',')
+        if (iter==0){
+            data.each{ val ->
+                heads.add(val)
+        }
+        iter++
+        }else{
+            def i = 0
+            def profile = [:]
+            def name = data[0].toLowerCase()
+            heads.each{ head ->
+                profile."${head}" = data[i]
+                i++
+            }
+            profile.Replicas = data[data.size()-1]
+            profile.CPU = "1"
+            profile.MEM = '1500M'
+            profiles."${name}" = profile
+        }
+    }
+    scripts.each{script -> 
+        if (script != ""){
+            def isPresent = profiles."${script}"
+            if (isPresent != null){
+                profiles.each{key,val ->
+                    if (script == key){
+                        temp_buf << '<tr>'
+                        temp_buf << "<td>" << val.Scenario << "</td>"
+                        temp_buf << "<td><input name='value' style='text-align:center'  type='text' size='7' value=" << val.TPS << "></td>"
+                        temp_buf << "<td><input name='value' style='text-align:center'  type='text' size='7' value=" << val.SLA << "></td>"
+                        temp_buf << "<td><input name='value' style='text-align:center'  type='text' size='7' value=" << val.RumpUpTime << "></td>"
+                        temp_buf << "<td><input name='value' style='text-align:center'  type='text' size='7' value=" << val.RumpUPSteps << "></td>"
+                        temp_buf << "<td><input name='value' style='text-align:center'  type='text' size='7' value=" << val.TestDuration << "></td>"
+                        temp_buf << "<td><input name='value' style='text-align:center'  type='text' size='7' value=" << val.Replicas << "></td>"
+                        temp_buf << "<td>" << val.CPU << "</td>"
+                        temp_buf << "<td>" << val.MEM << "</td>"
+                        temp_buf << '</tr>'
+                    }
+                }
+            }else{
+                temp_buf << '<tr>'
+                temp_buf << "<td>" << "${script}" << "</td>"
+                temp_buf << "<td><input name='value' style='text-align:center'  type='text' size='7' value=empty></td>"
+                temp_buf << "<td><input name='value' style='text-align:center'  type='text' size='7' value=empty></td>"
+                temp_buf << "<td><input name='value' style='text-align:center'  type='text' size='7' value=empty></td>"
+                temp_buf << "<td><input name='value' style='text-align:center'  type='text' size='7' value=empty></td>"
+                temp_buf << "<td><input name='value' style='text-align:center'  type='text' size='7' value=empty></td>"
+                temp_buf << "<td><input name='value' style='text-align:center'  type='text' size='7' value=empty></td>"
+                temp_buf << "<td>1</td>"
+                temp_buf << "<td>2000M</td>"
+                temp_buf << '</tr>'
+            }
+        }
+    }
+    return temp_buf
+}
+def getCustomTable(endpoint){
+    def scripts = []
+    "${SCRIPTS}".split(",").each { scenario ->
+        scripts.add(scenario.replaceAll(~/\.[^\.]+$/, '').toLowerCase())
+    }
+    def temp_buf = "" << ""
+    scripts.each{script -> 
+        if (script != ""){
+            temp_buf << '<tr>'
+            temp_buf << "<td>" << "${script}" << "</td>"
+            temp_buf << "<td><input name='value' style='text-align:center'  type='text' size='7' value=empty></td>"
+            temp_buf << "<td><input name='value' style='text-align:center'  type='text' size='7' value=empty></td>"
+            temp_buf << "<td><input name='value' style='text-align:center'  type='text' size='7' value=empty></td>"
+            temp_buf << "<td><input name='value' style='text-align:center'  type='text' size='7' value=empty></td>"
+            temp_buf << "<td><input name='value' style='text-align:center'  type='text' size='7' value=empty></td>"
+            temp_buf << "<td><input name='value' style='text-align:center'  type='text' size='7' value=empty></td>"
+            temp_buf << "<td>1</td>"
+            temp_buf << "<td>2000M</td>"
+            temp_buf << '</tr>'
+        }
+    }
+    return temp_buf
+}
+
+def createAcceptCrt() throws KeyManagementException, NoSuchAlgorithmException, KeyStoreException {
+    SSLContext sslContext = SSLContextBuilder.create().loadTrustMaterial(new TrustSelfSignedStrategy()).build();
+    HostnameVerifier allowAllHosts = new NoopHostnameVerifier();
+    SSLConnectionSocketFactory connectionFactory = new SSLConnectionSocketFactory(sslContext, allowAllHosts);
+    return HttpClients.custom().setSSLSocketFactory(connectionFactory).build();
+}
+
+def jsonParse(def json) {
+    new groovy.json.JsonSlurperClassic().parseText(json)
+}
+def getAddr(uri,schema){
+    def matches = (uri =~ "^((http[s]?):\\/)?\\/?([^:\\/\\s]+)(:([^\\/]*))?")
+    def addr = ""
+    if (schema){
+        addr = matches[0].getAt(2)+"://" + matches[0].getAt(3)
+    }else{
+        addr = matches[0].getAt(3)
+    }
+    if (matches[0].getAt(4).toString() != "null" ){
+        addr = addr + matches[0].getAt(4)
+    }
+    return addr
+}
+

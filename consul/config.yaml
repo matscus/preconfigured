@@ -1,0 +1,24 @@
+{
+  "datacenter": "in-the-bus",
+  "data_dir": "/opt/consul",
+  "log_level": "ERROR",
+  "node_name": "master",
+  "server": true,
+  "addresses": {
+    "https": "0.0.0.0"
+  },
+  "ports": {
+    "https": 8500
+  },
+
+
+  "watches": [
+    {
+        "type": "checks",
+        "handler": "/usr/bin/health-check-handler.sh"
+    }
+  ],
+  "telemetry": {
+     "statsite_address": "0.0.0.0:2180"
+  }
+}

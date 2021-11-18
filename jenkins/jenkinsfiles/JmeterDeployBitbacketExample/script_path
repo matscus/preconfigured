@@ -1,0 +1,69 @@
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.conn.ssl.*;
+import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.HttpClients;
+import org.apache.http.ssl.SSLContextBuilder;
+import javax.net.ssl.*;
+import java.io.IOException;
+import java.security.KeyManagementException;
+import java.security.KeyStoreException;
+import java.security.NoSuchAlgorithmException;
+import org.apache.http.util.EntityUtils;
+import org.apache.http.client.methods.CloseableHttpResponse;
+import jenkins.model.*;
+
+def creds = com.cloudbees.plugins.credentials.CredentialsProvider.lookupCredentials(
+  com.cloudbees.plugins.credentials.common.StandardUsernameCredentials.class, Jenkins.instance, null, null ).find{
+    it.id ==  'bitbucket_user'}
+def USERNAME = creds.username
+def PASSWORD = creds.password
+
+def uri = new URI("${REPOSITORY_URL}")
+def addr = getAddr(uri,true)
+def temp = uri.getPath().split("/").takeRight(2)
+def project = temp[0]
+def repos = temp[1].replaceAll(".git","")
+
+def HttpClients = createAcceptCrt()
+def endpoint = addr + "/bitbucket/rest/api/1.0/projects/"+project+"/repos/"+repos+"/browse"
+println endpoint
+def httpget = new HttpGet(endpoint)
+httpget.addHeader("Authorization", "Basic "+"${USERNAME}:${PASSWORD}".bytes.encodeBase64().toString());
+def response = HttpClients.execute(httpget)
+def entity = response.getEntity()
+def result = EntityUtils.toString(entity)
+println result
+def json =  jsonParse(result)
+def dirs = []
+dirs.add("/:selected")
+json.children.values.each{ val ->
+    if (val.type.toString() == "DIRECTORY"){
+        dirs.add(val.path.name)
+    }
+}
+return dirs
+
+def createAcceptCrt() throws KeyManagementException, NoSuchAlgorithmException, KeyStoreException {
+    SSLContext sslContext = SSLContextBuilder.create().loadTrustMaterial(new TrustSelfSignedStrategy()).build();
+    HostnameVerifier allowAllHosts = new NoopHostnameVerifier();
+    SSLConnectionSocketFactory connectionFactory = new SSLConnectionSocketFactory(sslContext, allowAllHosts);
+    return HttpClients.custom().setSSLSocketFactory(connectionFactory).build();
+}
+
+def jsonParse(def json) {
+    new groovy.json.JsonSlurperClassic().parseText(json)
+}
+def getAddr(uri,schema){
+    def matches = (uri =~ "^((http[s]?):\\/)?\\/?([^:\\/\\s]+)(:([^\\/]*))?")
+    def addr = ""
+    if (schema){
+        addr = matches[0].getAt(2)+"://" + matches[0].getAt(3)
+    }else{
+        addr = matches[0].getAt(3)
+    }
+    if (matches[0].getAt(4).toString() != "null" ){
+        addr = addr + matches[0].getAt(4)
+    }
+    return addr
+}
+

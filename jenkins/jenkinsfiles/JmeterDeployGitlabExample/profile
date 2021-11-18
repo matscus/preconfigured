@@ -1,0 +1,176 @@
+import javax.net.ssl.*;
+import java.io.IOException;
+import org.yaml.snakeyaml.Yaml;
+import org.apache.http.conn.ssl.*;
+import java.security.KeyStoreException;
+import org.apache.http.util.EntityUtils;
+import java.security.KeyManagementException;
+import org.apache.http.ssl.SSLContextBuilder;
+import java.security.NoSuchAlgorithmException;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.client.utils.URIBuilder;
+import org.apache.http.impl.client.HttpClients;
+import org.apache.http.message.BasicNameValuePair;
+import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.client.entity.UrlEncodedFormEntity;
+import org.apache.http.client.methods.CloseableHttpResponse;
+
+def uri = new URI("${REPOSITORY_URL}")
+def temp = uri.getPath().split("/").takeRight(2)
+def project = temp[0]
+def repos = temp[1].replaceAll(".git","")
+def addr = getAddr(uri,true)
+def endpoint = addr + '/api/v4/projects/'
+
+def style ='<head><style>table.bus {font-family: arial, sans-serif;border-collapse: collapse;width: 100%;}td, th {border: 1px solid #dddddd;text-align: center;padding: 8px;}tr:nth-child(even) {background-color: #dddddd;}</style></head>'
+def foo = '<table class="bus">'
+def bar = '</table>'
+def buf_result = style << foo
+buf_result << '<tr>'
+buf_result << '<th>Scenario</th>'
+buf_result << '<th>TPS</th>'
+buf_result << '<th>SLA</th>'
+buf_result << '<th>Rump-Up Time</th>'
+buf_result << '<th>Rump-Up Steps Count</th>'
+buf_result << '<th>Test Duration</th>'
+buf_result << '<th>Replicas</th>'
+buf_result << '<th>CPU</th>'
+buf_result << '<th>MEM</th>'
+buf_result << '</tr>'
+
+switch ("${PROFILE_TYPE}"){
+    case "csv":
+        if ("${SCRIPTS_PATH}" == "/"){
+            endpoint = endpoint +"${PROJECT_ID}/repository/files/profile.csv/raw"
+        }else{
+             endpoint = endpoint +"${PROJECT_ID}/repository/files/${SCRIPTS_PATH}%2Fprofile.csv/raw"
+        }
+        buf_result  << getCSVTable(endpoint) << bar
+        break
+    case "custom":
+        buf_result << getCustomTable() << bar
+        break
+}
+def getCSVTable(endpoint){
+    def scripts = []
+    "${SCRIPTS}".split(",").each { scenario ->
+        scripts.add(scenario.replaceAll(~/\.[^\.]+$/, '').toLowerCase())
+    }
+    def temp_buf = "" << ""
+    def raw = getProfile(endpoint)
+    def rows = raw.split("\n")
+    def profiles = [:]
+    def iter =0 
+    def heads = []
+    rows.each{
+        def data = it.split(',')
+        if (iter==0){
+            data.each{ val ->
+                heads.add(val)
+        }
+        iter++
+        }else{
+            def i = 0
+            def profile = [:]
+            def name = data[0].toLowerCase()
+            heads.each{ head ->
+                profile."${head}" = data[i]
+                i++
+            }
+            profile.Replicas = data[data.size()-1]
+            profile.CPU = "1"
+            profile.MEM = '1500M'
+            profiles."${name}" = profile
+        }
+    }
+    scripts.each{script -> 
+        if (script != ""){
+            def isPresent = profiles."${script}"
+            if (isPresent != null){
+                profiles.each{key,val ->
+                    if (script == key){
+                        temp_buf << '<tr>'
+                        temp_buf << "<td>" << val.Scenario << "</td>"
+                        temp_buf << "<td><input name='value' style='text-align:center'  type='text' size='7' value=" << val.TPS << "></td>"
+                        temp_buf << "<td><input name='value' style='text-align:center'  type='text' size='7' value=" << val.SLA << "></td>"
+                        temp_buf << "<td><input name='value' style='text-align:center'  type='text' size='7' value=" << val.RumpUpTime << "></td>"
+                        temp_buf << "<td><input name='value' style='text-align:center'  type='text' size='7' value=" << val.RumpUPSteps << "></td>"
+                        temp_buf << "<td><input name='value' style='text-align:center'  type='text' size='7' value=" << val.TestDuration << "></td>"
+                        temp_buf << "<td><input name='value' style='text-align:center'  type='text' size='7' value=" << val.Replicas << "></td>"
+                        temp_buf << "<td>" << val.CPU << "</td>"
+                        temp_buf << "<td>" << val.MEM << "</td>"
+                        temp_buf << '</tr>'
+                    }
+                }
+            }else{
+                temp_buf << '<tr>'
+                temp_buf << "<td>" << "${script}" << "</td>"
+                temp_buf << "<td><input name='value' style='text-align:center'  type='text' size='7' value=empty></td>"
+                temp_buf << "<td><input name='value' style='text-align:center'  type='text' size='7' value=empty></td>"
+                temp_buf << "<td><input name='value' style='text-align:center'  type='text' size='7' value=empty></td>"
+                temp_buf << "<td><input name='value' style='text-align:center'  type='text' size='7' value=empty></td>"
+                temp_buf << "<td><input name='value' style='text-align:center'  type='text' size='7' value=empty></td>"
+                temp_buf << "<td><input name='value' style='text-align:center'  type='text' size='7' value=empty></td>"
+                temp_buf << "<td>1</td>"
+                temp_buf << "<td>2000M</td>"
+                temp_buf << '</tr>'
+            }
+        }
+    }
+    return temp_buf
+}
+def getCustomTable(endpoint){
+    def scripts = []
+    "${SCRIPTS}".split(",").each { scenario ->
+        scripts.add(scenario.replaceAll(~/\.[^\.]+$/, '').toLowerCase())
+    }
+    def temp_buf = "" << ""
+    scripts.each{script -> 
+        if (script != ""){
+            temp_buf << '<tr>'
+            temp_buf << "<td>" << "${script}" << "</td>"
+            temp_buf << "<td><input name='value' style='text-align:center'  type='text' size='7' value=empty></td>"
+            temp_buf << "<td><input name='value' style='text-align:center'  type='text' size='7' value=empty></td>"
+            temp_buf << "<td><input name='value' style='text-align:center'  type='text' size='7' value=empty></td>"
+            temp_buf << "<td><input name='value' style='text-align:center'  type='text' size='7' value=empty></td>"
+            temp_buf << "<td><input name='value' style='text-align:center'  type='text' size='7' value=empty></td>"
+            temp_buf << "<td><input name='value' style='text-align:center'  type='text' size='7' value=empty></td>"
+            temp_buf << "<td>1</td>"
+            temp_buf << "<td>2000M</td>"
+            temp_buf << '</tr>'
+        }
+    }
+    return temp_buf
+}
+def getProfile(endpoint){
+    def httpclient = createAcceptCrt()
+    def httpget = new HttpGet(endpoint)
+    def response = httpclient.execute(httpget)
+    def entity = response.getEntity()
+    return EntityUtils.toString(entity)
+}
+
+def createAcceptCrt() throws KeyManagementException, NoSuchAlgorithmException, KeyStoreException {
+    SSLContext sslContext = SSLContextBuilder.create().loadTrustMaterial(new TrustSelfSignedStrategy()).build();
+    HostnameVerifier allowAllHosts = new NoopHostnameVerifier();
+    SSLConnectionSocketFactory connectionFactory = new SSLConnectionSocketFactory(sslContext, allowAllHosts);
+    return HttpClients.custom().setSSLSocketFactory(connectionFactory).build();
+}
+
+def jsonParse(def json) {
+    new groovy.json.JsonSlurperClassic().parseText(json)
+}
+def getAddr(uri,schema){
+    def matches = (uri =~ "^((http[s]?):\\/)?\\/?([^:\\/\\s]+)(:([^\\/]*))?")
+    def addr = ""
+    if (schema){
+        addr = matches[0].getAt(2)+"://" + matches[0].getAt(3)
+    }else{
+        addr = matches[0].getAt(3)
+    }
+    if (matches[0].getAt(4).toString() != "null" ){
+        println " NOT NILL"
+        addr = addr + matches[0].getAt(4)
+    }
+    return addr
+}

@@ -1,0 +1,136 @@
+groups:
+  - name: host_global
+    rules:
+    - record: instance:node_up_time:second
+      expr: |2
+          node_time_seconds
+        -
+          node_boot_time_seconds
+  - name: host_cpu
+    rules:
+    - record: instance:node_cpu_seconds_total:irate5m
+      expr: avg(irate(node_cpu_seconds_total[5m]))by(mode,instance)* 100
+    - record: instance:node_context_switches_total:rate1m
+      expr: rate(node_context_switches_total[1m])
+    - record: instance:node_procs_blocked:rate1m
+      expr:  rate(node_procs_blocked[1m])
+    - record: instance:node_procs_running:rate1m
+      expr:  rate(node_procs_running[1m])
+    - record: instance:node_cpu_core:count
+      expr:  count(count(node_cpu_seconds_total) by (instance,cpu))by (instance)
+      
+  - name: host_memory
+    rules:
+    - record: instance:node_memory_Active_bytes:rate1m
+      expr:  rate(node_memory_Inactive_bytes[1m])
+    - record: instance:node_network_receive_bytes_total:irate1m
+      expr: irate(node_network_receive_bytes_total[1m]) 
+    - record: instance:node_memory_load_bytes:total
+      expr: |2
+          node_memory_MemFree_bytes
+        /
+         node_memory_MemTotal_bytes
+    - record: instance:node_memory_used_bytes:total
+      expr: |2
+          node_memory_MemTotal_bytes
+        -
+         node_memory_MemAvailable_bytes
+    - record: instance:node_memory_cache_and_buffer_bytes:total
+      expr: |2
+          node_memory_Cached_bytes
+        +
+         node_memory_Buffers_bytes
+      
+  - name: host_net
+    rules:  
+    - record: instance:node_network_receive_bytes_total:irate1m
+      expr: irate(node_network_receive_bytes_total[1m])
+    - record: instance:node_network_transmit_bytes_total:irate1m
+      expr: irate(node_network_transmit_bytes_total[1m])
+    - record: instance:node_netstat_Tcp_PassiveOpens:irate30s
+      expr: irate(node_netstat_Tcp_PassiveOpens[30s])
+    - record: instance:node_netstat_Tcp_ActiveOpens:irate30s
+      expr: irate(node_netstat_Tcp_ActiveOpens[30s])
+    - record: instance:node_netstat_Tcp_InSegs:irate30s
+      expr: irate(node_netstat_Tcp_InSegs[30s])
+    - record: instance:node_netstat_Tcp_OutSegs:irate30s
+      expr:  irate(node_netstat_Tcp_OutSegs[30s])
+    - record: instance:node_netstat_Tcp_RetransSegs:irate30s
+      expr:  irate(node_netstat_Tcp_RetransSegs[30s])
+    - record: instance:node_netstat_TcpExt_ListenDrops:irate30s
+      expr:  irate(node_netstat_TcpExt_ListenDrops[30s])
+      
+  - name: disk
+    rules:  
+    - record: instance:node_disk_reads_completed_total:irate1m
+      expr:  irate(node_disk_reads_completed_total{device=~"[a-z]*[a-z]"}[1m])
+    - record: instance:node_disk_writes_completed_total_ByDevice:irate1m
+      expr:  irate(node_disk_writes_completed_total{device=~"[a-z]*[a-z]"}[1m])
+    - record: instance:node_disk_read_bytes_total:irate1m
+      expr:  irate(node_disk_read_bytes_total[1m])
+    - record: instance:node_disk_written_bytes_total:irate1m
+      expr:  irate(node_disk_written_bytes_total[1m])
+    - record: instance:node_disk_io_time_seconds_total:irate1m
+      expr:  irate(node_disk_io_time_seconds_total[1m])
+    - record: instance:node_filesystem_free_bytes:sum
+      expr:  sum(node_filesystem_free_bytes)by(instance,mountpoint)
+    - record: instance:node_filesystem_size_bytes:sum
+      expr:  sum(node_filesystem_size_bytes)by(instance,mountpoint)
+    - record: instance:node_filesystem_avail_bytes:sum
+      expr:  sum(node_filesystem_avail_bytes)by(instance,mountpoint)
+    - record: instance:node_filesystem_free_total_bytes:sum
+      expr: |2
+          instance:node_filesystem_free_bytes:sum 
+        /
+          instance:node_filesystem_size_bytes:sum
+          *
+          100
+    - record: instance:node_filesystem_used_bytes:sum
+      expr: |2
+          instance:node_filesystem_size_bytes:sum
+        -
+          instance:node_filesystem_avail_bytes:sum
+    - record: instance:node_disk_read_time_seconds_total:rate1m
+      expr:  rate(node_disk_read_time_seconds_total[1m])
+    - record: instance:node_disk_reads_completed_total:rate1m
+      expr:  rate(node_disk_reads_completed_total[1m])
+    - record: instance:node_disk_read_latensy:rate1m
+      expr: |2
+          instance:node_disk_read_time_seconds_total:rate1m
+        /
+          instance:node_disk_reads_completed_total:rate1m
+    - record: instance:node_disk_read_time_seconds_total:irate1m
+      expr:  irate(node_disk_read_time_seconds_total[1m])
+    - record: instance:node_disk_reads_completed_total:irate1m
+      expr:  irate(node_disk_reads_completed_total[1m])
+    - record: instance:node_disk_read_latensy:irate1m
+      expr: |2
+          instance:node_disk_read_time_seconds_total:rate1m
+        /
+          instance:node_disk_reads_completed_total:rate1m
+    - record: instance:node_disk_write_time_seconds_total:rate1m
+      expr:  rate(node_disk_write_time_seconds_total[1m])
+    - record: instance:node_disk_writes_completed_total:rate1m
+      expr:  rate(node_disk_writes_completed_total[1m])
+    - record: instance:node_disk_writes_latensy:rate1m
+      expr: |2
+          instance:node_disk_write_time_seconds_total:rate1m
+        /
+          instance:node_disk_writes_completed_total:rate1m
+    - record: instance:node_disk_writes_completed_total:irate1m
+      expr:  irate(node_disk_writes_completed_total[1m])
+    - record: instance:node_disk_writes_completed:irate1m
+      expr:  irate(node_disk_writes_completed[1m])
+    - record: instance:node_disk_writes_latensy:irate1m
+      expr: |2
+          instance:node_disk_writes_completed_total:rate1m
+        /
+          instance:node_disk_writes_completed:rate1m
+ 
+  - name: swap
+    rules:  
+    - record: instance:node_swap_usage:total
+      expr: |2
+          node_memory_SwapFree_bytes
+        /
+          node_memory_SwapTotal_bytes 

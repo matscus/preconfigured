@@ -1,0 +1,10 @@
+groups:
+- name: hdd
+  rules:
+  - alert: free_total_percent
+    expr: instance:node_filesystem_free_total_bytes:sum < 10
+    for: 10m
+    labels:
+      severity: critical
+    annotations:
+      summary: 'Remaining free space in mountpoint less 20 percent: Instance {{$labels.instance }} - Mountpoint {{$labels.mountpoint }}'

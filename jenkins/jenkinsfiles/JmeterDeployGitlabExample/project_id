@@ -1,0 +1,62 @@
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.conn.ssl.*;
+import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.HttpClients;
+import org.apache.http.ssl.SSLContextBuilder;
+import javax.net.ssl.*;
+import java.io.IOException;
+import java.security.KeyManagementException;
+import java.security.KeyStoreException;
+import java.security.NoSuchAlgorithmException;
+import org.apache.http.util.EntityUtils;
+import org.apache.http.client.methods.CloseableHttpResponse;
+
+def uri = new URI("${REPOSITORY_URL}")
+def temp = uri.getPath().split("/").takeRight(2)
+def project = temp[0]
+def repos = temp[1].replaceAll(".git","")
+def addr = getAddr(uri,true)
+def endpoint = addr + '/api/v4/projects/'
+
+try  {
+    def httpclient = createAcceptCrt()
+    def httpget = new HttpGet(endpoint)
+    def response = httpclient.execute(httpget)
+    def entity = response.getEntity()
+    def result = EntityUtils.toString(entity)
+    def json =  jsonParse(result)
+    def projectID = []
+    json.each{ r ->
+        if (r.name == repos){
+            projectID.add(r.id.toString()+":selected:disabled")
+        }
+    }
+    return projectID
+} catch (NoSuchAlgorithmException | KeyStoreException | KeyManagementException | IOException e) {
+    throw new RuntimeException(e)
+}
+
+def createAcceptCrt() throws KeyManagementException, NoSuchAlgorithmException, KeyStoreException {
+    SSLContext sslContext = SSLContextBuilder.create().loadTrustMaterial(new TrustSelfSignedStrategy()).build();
+    HostnameVerifier allowAllHosts = new NoopHostnameVerifier();
+    SSLConnectionSocketFactory connectionFactory = new SSLConnectionSocketFactory(sslContext, allowAllHosts);
+    return HttpClients.custom().setSSLSocketFactory(connectionFactory).build();
+}
+
+def jsonParse(def json) {
+    new groovy.json.JsonSlurperClassic().parseText(json)
+}
+def getAddr(uri,schema){
+    def matches = (uri =~ "^((http[s]?):\\/)?\\/?([^:\\/\\s]+)(:([^\\/]*))?")
+    def addr = ""
+    if (schema){
+        addr = matches[0].getAt(2)+"://" + matches[0].getAt(3)
+    }else{
+        addr = matches[0].getAt(3)
+    }
+    if (matches[0].getAt(4).toString() != "null" ){
+        println " NOT NILL"
+        addr = addr + matches[0].getAt(4)
+    }
+    return addr
+}

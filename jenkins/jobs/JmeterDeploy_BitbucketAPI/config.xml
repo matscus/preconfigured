@@ -1,0 +1,1013 @@
+<?xml version='1.1' encoding='UTF-8'?>
+<flow-definition plugin="workflow-job@2.41">
+  <actions/>
+  <description></description>
+  <keepDependencies>false</keepDependencies>
+  <properties>
+    <hudson.model.ParametersDefinitionProperty>
+      <parameterDefinitions>
+        <hudson.model.StringParameterDefinition>
+          <name>REPOSITORY_URL</name>
+          <defaultValue>${GITEA_REPOSITORY_URL}</defaultValue>
+          <trim>false</trim>
+        </hudson.model.StringParameterDefinition>
+        <hudson.model.StringParameterDefinition>
+          <name>REGISTRY_URL</name>
+          <defaultValue>${REGISTRY_URL}</defaultValue>
+          <trim>false</trim>
+        </hudson.model.StringParameterDefinition>
+        <org.biouno.unochoice.ChoiceParameter plugin="uno-choice@2.5.7">
+          <name>MASTER_NODE</name>
+          <randomName>choice-parameter-1561176013508530</randomName>
+          <visibleItemCount>1</visibleItemCount>
+          <script class="org.biouno.unochoice.model.GroovyScript">
+            <secureScript plugin="script-security@1.78">
+              <script>def swarmNode=&quot;${SWARM_MASTER_DEPLOY_HOST}&quot;
+return [swarmNode+&quot;:selected:disabled&quot;]</script>
+              <sandbox>false</sandbox>
+            </secureScript>
+            <secureFallbackScript plugin="script-security@1.78">
+              <script></script>
+              <sandbox>false</sandbox>
+            </secureFallbackScript>
+          </script>
+          <projectName>JmeterDeploy_Bitbucket</projectName>
+          <projectFullName>examples/JmeterDeploy_Bitbucket</projectFullName>
+          <choiceType>PT_RADIO</choiceType>
+          <filterable>false</filterable>
+          <filterLength>1</filterLength>
+        </org.biouno.unochoice.ChoiceParameter>
+        <org.biouno.unochoice.CascadeChoiceParameter plugin="uno-choice@2.5.7">
+          <name>SCRIPTS_PATH</name>
+          <randomName>choice-parameter-17811179254275507</randomName>
+          <visibleItemCount>1</visibleItemCount>
+          <script class="org.biouno.unochoice.model.GroovyScript">
+            <secureScript plugin="script-security@1.78">
+              <script>import org.apache.http.client.methods.HttpGet;
+import org.apache.http.conn.ssl.*;
+import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.HttpClients;
+import org.apache.http.ssl.SSLContextBuilder;
+import javax.net.ssl.*;
+import java.io.IOException;
+import java.security.KeyManagementException;
+import java.security.KeyStoreException;
+import java.security.NoSuchAlgorithmException;
+import org.apache.http.util.EntityUtils;
+import org.apache.http.client.methods.CloseableHttpResponse;
+import jenkins.model.*;
+
+def creds = com.cloudbees.plugins.credentials.CredentialsProvider.lookupCredentials(
+  com.cloudbees.plugins.credentials.common.StandardUsernameCredentials.class, Jenkins.instance, null, null ).find{
+    it.id ==  &apos;bitbucket_user&apos;}
+def USERNAME = creds.username
+def PASSWORD = creds.password
+
+def uri = new URI(&quot;${REPOSITORY_URL}&quot;)
+def addr = getAddr(uri,true)
+def temp = uri.getPath().split(&quot;/&quot;).takeRight(2)
+def project = temp[0]
+def repos = temp[1].replaceAll(&quot;.git&quot;,&quot;&quot;)
+
+def HttpClients = createAcceptCrt()
+def endpoint = addr + &quot;/bitbucket/rest/api/1.0/projects/&quot;+project+&quot;/repos/&quot;+repos+&quot;/browse&quot;
+println endpoint
+def httpget = new HttpGet(endpoint)
+httpget.addHeader(&quot;Authorization&quot;, &quot;Basic &quot;+&quot;${USERNAME}:${PASSWORD}&quot;.bytes.encodeBase64().toString());
+def response = HttpClients.execute(httpget)
+def entity = response.getEntity()
+def result = EntityUtils.toString(entity)
+println result
+def json =  jsonParse(result)
+def dirs = []
+dirs.add(&quot;/:selected&quot;)
+json.children.values.each{ val -&gt;
+    if (val.type.toString() == &quot;DIRECTORY&quot;){
+        dirs.add(val.path.name)
+    }
+}
+return dirs
+
+def createAcceptCrt() throws KeyManagementException, NoSuchAlgorithmException, KeyStoreException {
+    SSLContext sslContext = SSLContextBuilder.create().loadTrustMaterial(new TrustSelfSignedStrategy()).build();
+    HostnameVerifier allowAllHosts = new NoopHostnameVerifier();
+    SSLConnectionSocketFactory connectionFactory = new SSLConnectionSocketFactory(sslContext, allowAllHosts);
+    return HttpClients.custom().setSSLSocketFactory(connectionFactory).build();
+}
+
+def jsonParse(def json) {
+    new groovy.json.JsonSlurperClassic().parseText(json)
+}
+def getAddr(uri,schema){
+    def matches = (uri =~ &quot;^((http[s]?):\\/)?\\/?([^:\\/\\s]+)(:([^\\/]*))?&quot;)
+    def addr = &quot;&quot;
+    if (schema){
+        addr = matches[0].getAt(2)+&quot;://&quot; + matches[0].getAt(3)
+    }else{
+        addr = matches[0].getAt(3)
+    }
+    if (matches[0].getAt(4).toString() != &quot;null&quot; ){
+        addr = addr + matches[0].getAt(4)
+    }
+    return addr
+}
+
+</script>
+              <sandbox>false</sandbox>
+            </secureScript>
+            <secureFallbackScript plugin="script-security@1.78">
+              <script></script>
+              <sandbox>false</sandbox>
+            </secureFallbackScript>
+          </script>
+          <projectName>JmeterDeploy_Bitbucket</projectName>
+          <projectFullName>examples/JmeterDeploy_Bitbucket</projectFullName>
+          <parameters class="linked-hash-map"/>
+          <referencedParameters>REPOSITORY_URL</referencedParameters>
+          <choiceType>PT_RADIO</choiceType>
+          <filterable>false</filterable>
+          <filterLength>1</filterLength>
+        </org.biouno.unochoice.CascadeChoiceParameter>
+        <org.biouno.unochoice.CascadeChoiceParameter plugin="uno-choice@2.5.7">
+          <name>PROFILE_TYPE</name>
+          <randomName>choice-parameter-17871621078460940</randomName>
+          <visibleItemCount>1</visibleItemCount>
+          <script class="org.biouno.unochoice.model.GroovyScript">
+            <secureScript plugin="script-security@1.78">
+              <script>import org.apache.http.client.methods.HttpGet;
+import org.apache.http.conn.ssl.*;
+import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.HttpClients;
+import org.apache.http.ssl.SSLContextBuilder;
+import javax.net.ssl.*;
+import java.io.IOException;
+import java.security.KeyManagementException;
+import java.security.KeyStoreException;
+import java.security.NoSuchAlgorithmException;
+import org.apache.http.util.EntityUtils;
+import org.apache.http.client.methods.CloseableHttpResponse;
+import jenkins.model.*;
+
+def creds = com.cloudbees.plugins.credentials.CredentialsProvider.lookupCredentials(
+  com.cloudbees.plugins.credentials.common.StandardUsernameCredentials.class, Jenkins.instance, null, null ).find{
+    it.id ==  &apos;bitbucket_user&apos;}
+def USERNAME = creds.username
+def PASSWORD = creds.password
+
+def uri = new URI(&quot;${REPOSITORY_URL}&quot;)
+def addr = getAddr(uri,true)
+def temp = uri.getPath().split(&quot;/&quot;).takeRight(2)
+def project = temp[0]
+def repos = temp[1].replaceAll(&quot;.git&quot;,&quot;&quot;)
+
+def HttpClients = createAcceptCrt()
+def endpoint = addr + &quot;/bitbucket/rest/api/1.0/projects/&quot;+project+&quot;/repos/&quot;+repos+&quot;/browse/${SCRIPTS_PATH}&quot;
+println endpoint
+def httpget = new HttpGet(endpoint)
+httpget.addHeader(&quot;Authorization&quot;, &quot;Basic &quot;+&quot;${USERNAME}:${PASSWORD}&quot;.bytes.encodeBase64().toString());
+def response = HttpClients.execute(httpget)
+def entity = response.getEntity()
+def result = EntityUtils.toString(entity)
+println result
+def json =  jsonParse(result)
+def profileType = []
+def csvSelect = false
+json.children.values.each{ tree -&gt;
+    switch (tree.path.name) {
+        case &quot;profile.csv&quot; : 
+            profileType.add(&quot;csv:selected&quot;)
+            csvSelect = true                   
+    }
+}
+if (!csvSelect){
+    profileType.add(&quot;custom:selected&quot;)
+}else{
+    profileType.add(&quot;custom&quot;)
+}
+return profileType
+
+
+def createAcceptCrt() throws KeyManagementException, NoSuchAlgorithmException, KeyStoreException {
+    SSLContext sslContext = SSLContextBuilder.create().loadTrustMaterial(new TrustSelfSignedStrategy()).build();
+    HostnameVerifier allowAllHosts = new NoopHostnameVerifier();
+    SSLConnectionSocketFactory connectionFactory = new SSLConnectionSocketFactory(sslContext, allowAllHosts);
+    return HttpClients.custom().setSSLSocketFactory(connectionFactory).build();
+}
+
+def jsonParse(def json) {
+    new groovy.json.JsonSlurperClassic().parseText(json)
+}
+def getAddr(uri,schema){
+    def matches = (uri =~ &quot;^((http[s]?):\\/)?\\/?([^:\\/\\s]+)(:([^\\/]*))?&quot;)
+    def addr = &quot;&quot;
+    if (schema){
+        addr = matches[0].getAt(2)+&quot;://&quot; + matches[0].getAt(3)
+    }else{
+        addr = matches[0].getAt(3)
+    }
+    if (matches[0].getAt(4).toString() != &quot;null&quot; ){
+        addr = addr + matches[0].getAt(4)
+    }
+    return addr
+}</script>
+              <sandbox>false</sandbox>
+            </secureScript>
+            <secureFallbackScript plugin="script-security@1.78">
+              <script></script>
+              <sandbox>false</sandbox>
+            </secureFallbackScript>
+          </script>
+          <projectName>JmeterDeploy_Bitbucket</projectName>
+          <projectFullName>examples/JmeterDeploy_Bitbucket</projectFullName>
+          <parameters class="linked-hash-map"/>
+          <referencedParameters>REPOSITORY_URL,SCRIPTS_PATH</referencedParameters>
+          <choiceType>PT_RADIO</choiceType>
+          <filterable>false</filterable>
+          <filterLength>1</filterLength>
+        </org.biouno.unochoice.CascadeChoiceParameter>
+        <org.biouno.unochoice.CascadeChoiceParameter plugin="uno-choice@2.5.7">
+          <name>SCRIPTS</name>
+          <randomName>choice-parameter-17813169741520262</randomName>
+          <visibleItemCount>1</visibleItemCount>
+          <script class="org.biouno.unochoice.model.GroovyScript">
+            <secureScript plugin="script-security@1.78">
+              <script>import org.apache.http.client.methods.HttpGet;
+import org.apache.http.conn.ssl.*;
+import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.HttpClients;
+import org.apache.http.ssl.SSLContextBuilder;
+import javax.net.ssl.*;
+import java.io.IOException;
+import java.security.KeyManagementException;
+import java.security.KeyStoreException;
+import java.security.NoSuchAlgorithmException;
+import org.apache.http.util.EntityUtils;
+import org.apache.http.client.methods.CloseableHttpResponse;
+import jenkins.model.*;
+
+def creds = com.cloudbees.plugins.credentials.CredentialsProvider.lookupCredentials(
+  com.cloudbees.plugins.credentials.common.StandardUsernameCredentials.class, Jenkins.instance, null, null ).find{
+    it.id ==  &apos;bitbucket_user&apos;}
+def USERNAME = creds.username
+def PASSWORD = creds.password
+
+def uri = new URI(&quot;${REPOSITORY_URL}&quot;)
+def addr = getAddr(uri,true)
+def temp = uri.getPath().split(&quot;/&quot;).takeRight(2)
+def project = temp[0]
+def repos = temp[1].replaceAll(&quot;.git&quot;,&quot;&quot;)
+
+def HttpClients = createAcceptCrt()
+def endpoint = addr + &quot;/bitbucket/rest/api/1.0/projects/&quot;+project+&quot;/repos/&quot;+repos+&quot;/browse/${SCRIPTS_PATH}&quot;
+println endpoint
+def httpget = new HttpGet(endpoint)
+httpget.addHeader(&quot;Authorization&quot;, &quot;Basic &quot;+&quot;${USERNAME}:${PASSWORD}&quot;.bytes.encodeBase64().toString());
+def response = HttpClients.execute(httpget)
+def entity = response.getEntity()
+def result = EntityUtils.toString(entity)
+println result
+def json =  jsonParse(result)
+def scripts = []
+json.children.values.each{ tree -&gt;
+    def matcher = (tree.path.name.toString() =~ /[^\.]*$/)
+    switch (matcher[0]){
+        case &quot;jmx&quot; : 
+            scripts.add(tree.path.name.toString()+&quot;:selected&quot;)
+    }
+}
+return scripts
+
+
+def createAcceptCrt() throws KeyManagementException, NoSuchAlgorithmException, KeyStoreException {
+    SSLContext sslContext = SSLContextBuilder.create().loadTrustMaterial(new TrustSelfSignedStrategy()).build();
+    HostnameVerifier allowAllHosts = new NoopHostnameVerifier();
+    SSLConnectionSocketFactory connectionFactory = new SSLConnectionSocketFactory(sslContext, allowAllHosts);
+    return HttpClients.custom().setSSLSocketFactory(connectionFactory).build();
+}
+
+def jsonParse(def json) {
+    new groovy.json.JsonSlurperClassic().parseText(json)
+}
+def getAddr(uri,schema){
+    def matches = (uri =~ &quot;^((http[s]?):\\/)?\\/?([^:\\/\\s]+)(:([^\\/]*))?&quot;)
+    def addr = &quot;&quot;
+    if (schema){
+        addr = matches[0].getAt(2)+&quot;://&quot; + matches[0].getAt(3)
+    }else{
+        addr = matches[0].getAt(3)
+    }
+    if (matches[0].getAt(4).toString() != &quot;null&quot; ){
+        addr = addr + matches[0].getAt(4)
+    }
+    return addr
+}</script>
+              <sandbox>false</sandbox>
+            </secureScript>
+            <secureFallbackScript plugin="script-security@1.78">
+              <script></script>
+              <sandbox>false</sandbox>
+            </secureFallbackScript>
+          </script>
+          <projectName>JmeterDeploy_Bitbucket</projectName>
+          <projectFullName>examples/JmeterDeploy_Bitbucket</projectFullName>
+          <parameters class="linked-hash-map"/>
+          <referencedParameters>REPOSITORY_URL,SCRIPTS_PATH,PROFILE_TYPE</referencedParameters>
+          <choiceType>PT_CHECKBOX</choiceType>
+          <filterable>false</filterable>
+          <filterLength>1</filterLength>
+        </org.biouno.unochoice.CascadeChoiceParameter>
+        <org.biouno.unochoice.DynamicReferenceParameter plugin="uno-choice@2.5.7">
+          <name>PROFILE</name>
+          <randomName>choice-parameter-17872808550265764</randomName>
+          <visibleItemCount>1</visibleItemCount>
+          <script class="org.biouno.unochoice.model.GroovyScript">
+            <secureScript plugin="script-security@1.78">
+              <script>import org.apache.http.client.methods.HttpGet;
+import org.apache.http.conn.ssl.*;
+import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.HttpClients;
+import org.apache.http.ssl.SSLContextBuilder;
+import javax.net.ssl.*;
+import java.io.IOException;
+import java.security.KeyManagementException;
+import java.security.KeyStoreException;
+import java.security.NoSuchAlgorithmException;
+import org.apache.http.util.EntityUtils;
+import org.apache.http.client.methods.CloseableHttpResponse;
+import jenkins.model.*;
+
+def style =&apos;&lt;head&gt;&lt;style&gt;table.bus {font-family: arial, sans-serif;border-collapse: collapse;width: 100%;}td, th {border: 1px solid #dddddd;text-align: center;padding: 8px;}tr:nth-child(even) {background-color: #dddddd;}&lt;/style&gt;&lt;/head&gt;&apos;
+def foo = &apos;&lt;table class=&quot;bus&quot;&gt;&apos;
+def bar = &apos;&lt;/table&gt;&apos;
+def buf_result = style &lt;&lt; foo
+buf_result &lt;&lt; &apos;&lt;tr&gt;&apos;
+buf_result &lt;&lt; &apos;&lt;th&gt;Scenario&lt;/th&gt;&apos;
+buf_result &lt;&lt; &apos;&lt;th&gt;TPS&lt;/th&gt;&apos;
+buf_result &lt;&lt; &apos;&lt;th&gt;SLA&lt;/th&gt;&apos;
+buf_result &lt;&lt; &apos;&lt;th&gt;Rump-Up Time&lt;/th&gt;&apos;
+buf_result &lt;&lt; &apos;&lt;th&gt;Rump-Up Steps Count&lt;/th&gt;&apos;
+buf_result &lt;&lt; &apos;&lt;th&gt;Test Duration&lt;/th&gt;&apos;
+buf_result &lt;&lt; &apos;&lt;th&gt;Replicas&lt;/th&gt;&apos;
+buf_result &lt;&lt; &apos;&lt;th&gt;CPU&lt;/th&gt;&apos;
+buf_result &lt;&lt; &apos;&lt;th&gt;MEM&lt;/th&gt;&apos;
+buf_result &lt;&lt; &apos;&lt;/tr&gt;&apos;
+
+def creds = com.cloudbees.plugins.credentials.CredentialsProvider.lookupCredentials(
+  com.cloudbees.plugins.credentials.common.StandardUsernameCredentials.class, Jenkins.instance, null, null ).find{
+    it.id ==  &apos;bitbucket_user&apos;}
+def USERNAME = creds.username
+def PASSWORD = creds.password
+
+def uri = new URI(&quot;${REPOSITORY_URL}&quot;)
+def addr = getAddr(uri,true)
+def temp = uri.getPath().split(&quot;/&quot;).takeRight(2)
+def project = temp[0]
+def repos = temp[1].replaceAll(&quot;.git&quot;,&quot;&quot;)
+
+def HttpClients = createAcceptCrt()
+def endpoint = &quot;&quot;
+if (&quot;${SCRIPTS_PATH}&quot; ==&quot;/&quot;){
+    endpoint = addr + &quot;/bitbucket/rest/api/1.0/projects/&quot;+project+&quot;/repos/&quot;+repos+&quot;/raw/profile.csv&quot;
+}else{
+    endpoint = addr + &quot;/bitbucket/rest/api/1.0/projects/&quot;+project+&quot;/repos/&quot;+repos+&quot;/raw/${SCRIPTS_PATH}/profile.csv&quot;
+}
+def httpget = new HttpGet(endpoint)
+httpget.addHeader(&quot;Authorization&quot;, &quot;Basic &quot;+&quot;${USERNAME}:${PASSWORD}&quot;.bytes.encodeBase64().toString());
+def response = HttpClients.execute(httpget)
+def entity = response.getEntity()
+def result = EntityUtils.toString(entity)
+
+switch (&quot;${PROFILE_TYPE}&quot;){
+    case &quot;csv&quot;:
+        buf_result  &lt;&lt; getCSVTable(result) &lt;&lt; bar
+        break
+    case &quot;custom&quot;:
+        buf_result &lt;&lt; getCustomTable() &lt;&lt; bar
+        break
+}
+def getCSVTable(raw){
+    def scripts = []
+    &quot;${SCRIPTS}&quot;.split(&quot;,&quot;).each { scenario -&gt;
+        scripts.add(scenario.replaceAll(~/\.[^\.]+$/, &apos;&apos;).toLowerCase())
+    }
+    def temp_buf = &quot;&quot; &lt;&lt; &quot;&quot;
+    def rows = raw.split(&quot;\n&quot;)
+    def profiles = [:]
+    def iter =0 
+    def heads = []
+    rows.each{
+        def data = it.split(&apos;,&apos;)
+        if (iter==0){
+            data.each{ val -&gt;
+                heads.add(val)
+        }
+        iter++
+        }else{
+            def i = 0
+            def profile = [:]
+            def name = data[0].toLowerCase()
+            heads.each{ head -&gt;
+                profile.&quot;${head}&quot; = data[i]
+                i++
+            }
+            profile.Replicas = data[data.size()-1]
+            profile.CPU = &quot;1&quot;
+            profile.MEM = &apos;1500M&apos;
+            profiles.&quot;${name}&quot; = profile
+        }
+    }
+    scripts.each{script -&gt; 
+        if (script != &quot;&quot;){
+            def isPresent = profiles.&quot;${script}&quot;
+            if (isPresent != null){
+                profiles.each{key,val -&gt;
+                    if (script == key){
+                        temp_buf &lt;&lt; &apos;&lt;tr&gt;&apos;
+                        temp_buf &lt;&lt; &quot;&lt;td&gt;&quot; &lt;&lt; val.Scenario &lt;&lt; &quot;&lt;/td&gt;&quot;
+                        temp_buf &lt;&lt; &quot;&lt;td&gt;&lt;input name=&apos;value&apos; style=&apos;text-align:center&apos;  type=&apos;text&apos; size=&apos;7&apos; value=&quot; &lt;&lt; val.TPS &lt;&lt; &quot;&gt;&lt;/td&gt;&quot;
+                        temp_buf &lt;&lt; &quot;&lt;td&gt;&lt;input name=&apos;value&apos; style=&apos;text-align:center&apos;  type=&apos;text&apos; size=&apos;7&apos; value=&quot; &lt;&lt; val.SLA &lt;&lt; &quot;&gt;&lt;/td&gt;&quot;
+                        temp_buf &lt;&lt; &quot;&lt;td&gt;&lt;input name=&apos;value&apos; style=&apos;text-align:center&apos;  type=&apos;text&apos; size=&apos;7&apos; value=&quot; &lt;&lt; val.RumpUpTime &lt;&lt; &quot;&gt;&lt;/td&gt;&quot;
+                        temp_buf &lt;&lt; &quot;&lt;td&gt;&lt;input name=&apos;value&apos; style=&apos;text-align:center&apos;  type=&apos;text&apos; size=&apos;7&apos; value=&quot; &lt;&lt; val.RumpUPSteps &lt;&lt; &quot;&gt;&lt;/td&gt;&quot;
+                        temp_buf &lt;&lt; &quot;&lt;td&gt;&lt;input name=&apos;value&apos; style=&apos;text-align:center&apos;  type=&apos;text&apos; size=&apos;7&apos; value=&quot; &lt;&lt; val.TestDuration &lt;&lt; &quot;&gt;&lt;/td&gt;&quot;
+                        temp_buf &lt;&lt; &quot;&lt;td&gt;&lt;input name=&apos;value&apos; style=&apos;text-align:center&apos;  type=&apos;text&apos; size=&apos;7&apos; value=&quot; &lt;&lt; val.Replicas &lt;&lt; &quot;&gt;&lt;/td&gt;&quot;
+                        temp_buf &lt;&lt; &quot;&lt;td&gt;&quot; &lt;&lt; val.CPU &lt;&lt; &quot;&lt;/td&gt;&quot;
+                        temp_buf &lt;&lt; &quot;&lt;td&gt;&quot; &lt;&lt; val.MEM &lt;&lt; &quot;&lt;/td&gt;&quot;
+                        temp_buf &lt;&lt; &apos;&lt;/tr&gt;&apos;
+                    }
+                }
+            }else{
+                temp_buf &lt;&lt; &apos;&lt;tr&gt;&apos;
+                temp_buf &lt;&lt; &quot;&lt;td&gt;&quot; &lt;&lt; &quot;${script}&quot; &lt;&lt; &quot;&lt;/td&gt;&quot;
+                temp_buf &lt;&lt; &quot;&lt;td&gt;&lt;input name=&apos;value&apos; style=&apos;text-align:center&apos;  type=&apos;text&apos; size=&apos;7&apos; value=empty&gt;&lt;/td&gt;&quot;
+                temp_buf &lt;&lt; &quot;&lt;td&gt;&lt;input name=&apos;value&apos; style=&apos;text-align:center&apos;  type=&apos;text&apos; size=&apos;7&apos; value=empty&gt;&lt;/td&gt;&quot;
+                temp_buf &lt;&lt; &quot;&lt;td&gt;&lt;input name=&apos;value&apos; style=&apos;text-align:center&apos;  type=&apos;text&apos; size=&apos;7&apos; value=empty&gt;&lt;/td&gt;&quot;
+                temp_buf &lt;&lt; &quot;&lt;td&gt;&lt;input name=&apos;value&apos; style=&apos;text-align:center&apos;  type=&apos;text&apos; size=&apos;7&apos; value=empty&gt;&lt;/td&gt;&quot;
+                temp_buf &lt;&lt; &quot;&lt;td&gt;&lt;input name=&apos;value&apos; style=&apos;text-align:center&apos;  type=&apos;text&apos; size=&apos;7&apos; value=empty&gt;&lt;/td&gt;&quot;
+                temp_buf &lt;&lt; &quot;&lt;td&gt;&lt;input name=&apos;value&apos; style=&apos;text-align:center&apos;  type=&apos;text&apos; size=&apos;7&apos; value=empty&gt;&lt;/td&gt;&quot;
+                temp_buf &lt;&lt; &quot;&lt;td&gt;1&lt;/td&gt;&quot;
+                temp_buf &lt;&lt; &quot;&lt;td&gt;2000M&lt;/td&gt;&quot;
+                temp_buf &lt;&lt; &apos;&lt;/tr&gt;&apos;
+            }
+        }
+    }
+    return temp_buf
+}
+def getCustomTable(endpoint){
+    def scripts = []
+    &quot;${SCRIPTS}&quot;.split(&quot;,&quot;).each { scenario -&gt;
+        scripts.add(scenario.replaceAll(~/\.[^\.]+$/, &apos;&apos;).toLowerCase())
+    }
+    def temp_buf = &quot;&quot; &lt;&lt; &quot;&quot;
+    scripts.each{script -&gt; 
+        if (script != &quot;&quot;){
+            temp_buf &lt;&lt; &apos;&lt;tr&gt;&apos;
+            temp_buf &lt;&lt; &quot;&lt;td&gt;&quot; &lt;&lt; &quot;${script}&quot; &lt;&lt; &quot;&lt;/td&gt;&quot;
+            temp_buf &lt;&lt; &quot;&lt;td&gt;&lt;input name=&apos;value&apos; style=&apos;text-align:center&apos;  type=&apos;text&apos; size=&apos;7&apos; value=empty&gt;&lt;/td&gt;&quot;
+            temp_buf &lt;&lt; &quot;&lt;td&gt;&lt;input name=&apos;value&apos; style=&apos;text-align:center&apos;  type=&apos;text&apos; size=&apos;7&apos; value=empty&gt;&lt;/td&gt;&quot;
+            temp_buf &lt;&lt; &quot;&lt;td&gt;&lt;input name=&apos;value&apos; style=&apos;text-align:center&apos;  type=&apos;text&apos; size=&apos;7&apos; value=empty&gt;&lt;/td&gt;&quot;
+            temp_buf &lt;&lt; &quot;&lt;td&gt;&lt;input name=&apos;value&apos; style=&apos;text-align:center&apos;  type=&apos;text&apos; size=&apos;7&apos; value=empty&gt;&lt;/td&gt;&quot;
+            temp_buf &lt;&lt; &quot;&lt;td&gt;&lt;input name=&apos;value&apos; style=&apos;text-align:center&apos;  type=&apos;text&apos; size=&apos;7&apos; value=empty&gt;&lt;/td&gt;&quot;
+            temp_buf &lt;&lt; &quot;&lt;td&gt;&lt;input name=&apos;value&apos; style=&apos;text-align:center&apos;  type=&apos;text&apos; size=&apos;7&apos; value=empty&gt;&lt;/td&gt;&quot;
+            temp_buf &lt;&lt; &quot;&lt;td&gt;1&lt;/td&gt;&quot;
+            temp_buf &lt;&lt; &quot;&lt;td&gt;2000M&lt;/td&gt;&quot;
+            temp_buf &lt;&lt; &apos;&lt;/tr&gt;&apos;
+        }
+    }
+    return temp_buf
+}
+
+def createAcceptCrt() throws KeyManagementException, NoSuchAlgorithmException, KeyStoreException {
+    SSLContext sslContext = SSLContextBuilder.create().loadTrustMaterial(new TrustSelfSignedStrategy()).build();
+    HostnameVerifier allowAllHosts = new NoopHostnameVerifier();
+    SSLConnectionSocketFactory connectionFactory = new SSLConnectionSocketFactory(sslContext, allowAllHosts);
+    return HttpClients.custom().setSSLSocketFactory(connectionFactory).build();
+}
+
+def jsonParse(def json) {
+    new groovy.json.JsonSlurperClassic().parseText(json)
+}
+def getAddr(uri,schema){
+    def matches = (uri =~ &quot;^((http[s]?):\\/)?\\/?([^:\\/\\s]+)(:([^\\/]*))?&quot;)
+    def addr = &quot;&quot;
+    if (schema){
+        addr = matches[0].getAt(2)+&quot;://&quot; + matches[0].getAt(3)
+    }else{
+        addr = matches[0].getAt(3)
+    }
+    if (matches[0].getAt(4).toString() != &quot;null&quot; ){
+        addr = addr + matches[0].getAt(4)
+    }
+    return addr
+}
+
+</script>
+              <sandbox>false</sandbox>
+            </secureScript>
+            <secureFallbackScript plugin="script-security@1.78">
+              <script></script>
+              <sandbox>false</sandbox>
+            </secureFallbackScript>
+          </script>
+          <projectName>JmeterDeploy_Bitbucket</projectName>
+          <projectFullName>examples/JmeterDeploy_Bitbucket</projectFullName>
+          <parameters class="linked-hash-map"/>
+          <referencedParameters>REPOSITORY_URL,SCRIPTS_PATH,SCRIPTS,PROFILE_TYPE</referencedParameters>
+          <choiceType>ET_FORMATTED_HTML</choiceType>
+          <omitValueField>false</omitValueField>
+        </org.biouno.unochoice.DynamicReferenceParameter>
+        <org.biouno.unochoice.CascadeChoiceParameter plugin="uno-choice@2.5.7">
+          <name>JMETER_BASE_VERSION</name>
+          <randomName>choice-parameter-17873361723067929</randomName>
+          <visibleItemCount>1</visibleItemCount>
+          <script class="org.biouno.unochoice.model.GroovyScript">
+            <secureScript plugin="script-security@1.78">
+              <script>def getTags() {
+    def tags = []
+    def endpoint = REGISTRY_URL + &quot;/v2/jmeter_base/tags/list&quot;
+    def conn = new URL(endpoint).openConnection()
+    def response = new groovy.json.JsonSlurper().parseText(conn.content.text)
+    def i =0
+    response.tags.each {
+        if (i == 0){
+                 tags.add(it + &apos;:selected&apos;)
+                 i++
+        }else{ 
+                 tags.add(it)
+        } 
+    }
+    return tags
+}
+return getTags()</script>
+              <sandbox>false</sandbox>
+            </secureScript>
+            <secureFallbackScript plugin="script-security@1.78">
+              <script></script>
+              <sandbox>false</sandbox>
+            </secureFallbackScript>
+          </script>
+          <projectName>JmeterDeploy_Bitbucket</projectName>
+          <projectFullName>examples/JmeterDeploy_Bitbucket</projectFullName>
+          <parameters class="linked-hash-map"/>
+          <referencedParameters>REGISTRY_URL</referencedParameters>
+          <choiceType>PT_SINGLE_SELECT</choiceType>
+          <filterable>false</filterable>
+          <filterLength>1</filterLength>
+        </org.biouno.unochoice.CascadeChoiceParameter>
+        <hudson.model.TextParameterDefinition>
+          <name>TEST_DESCRIPTION</name>
+          <trim>false</trim>
+        </hudson.model.TextParameterDefinition>
+        <hudson.model.StringParameterDefinition>
+          <name>DELAYED_START</name>
+          <description>delayed start time (in minutes)</description>
+          <defaultValue>0</defaultValue>
+          <trim>false</trim>
+        </hudson.model.StringParameterDefinition>
+        <org.biouno.unochoice.DynamicReferenceParameter plugin="uno-choice@2.5.7">
+          <name>STATUS</name>
+          <randomName>choice-parameter-1540802440928735</randomName>
+          <visibleItemCount>1</visibleItemCount>
+          <script class="org.biouno.unochoice.model.GroovyScript">
+            <secureScript plugin="script-security@1.78">
+              <script>def status = true
+def ok = &apos;&lt;p&gt;&lt;font size=&quot;7&quot; color=&quot;#07a307&quot;&gt;&lt;center&gt;OK: Ready to launch&lt;/center&gt;&lt;/font&gt;&lt;/p&gt;&apos;
+def fails = new StringBuilder()
+fails  &lt;&lt; &apos;&lt;p&gt;&lt;font size=&quot;7&quot; color=&quot;#a30f07&quot;&gt;&lt;center&gt;Fail: &lt;/center&gt;&lt;/font&gt;&lt;/p&gt;&apos;
+if(&quot;${REPOSITORY_URL}&quot; == &quot;&quot;){
+    fails  &lt;&lt; &apos;&lt;p&gt;&lt;font size=&quot;5&quot; color=&quot;#a30f07&quot;&gt;Repository URL is empty&lt;/font&gt;&lt;/p&gt;&apos;
+    status = false
+}
+if(&quot;${REGISTRY_URL}&quot; == &quot;&quot;){
+    fails  &lt;&lt; &apos;&lt;p&gt;&lt;font size=&quot;5&quot; color=&quot;#a30f07&quot;&gt;Registry URL is empty&lt;/font&gt;&lt;/p&gt;&apos;
+    status = false
+}
+if(&quot;${SCRIPTS}&quot;.size() == 0){
+    fails  &lt;&lt; &apos;&lt;p&gt;&lt;font size=&quot;5&quot; color=&quot;#a30f07&quot;&gt;Scripts not selected&lt;/font&gt;&lt;/p&gt;&apos;
+    status = false
+}
+def scripts =[]
+&quot;${SCRIPTS}&quot;.split(&quot;,&quot;).each { script -&gt;
+    scripts.add(script)
+}
+def profiles =[]
+&quot;${PROFILE}&quot;.split(&quot;,&quot;).each { profile -&gt;
+    profiles.add(profile.toLowerCase())
+}
+Integer iter = 0
+Integer cnt = profiles.size()/scripts.size()
+scripts.each { script -&gt;
+    println script
+    for(int i in 0..5) {
+        println profiles[iter+i]
+        if (profiles[iter+i] == &quot;empty&quot;){
+            fails  &lt;&lt; &apos;&lt;p&gt;&lt;font size=&quot;5&quot; color=&quot;#a30f07&quot;&gt;&apos; &lt;&lt; script &lt;&lt;&apos;: one or more parameters is empty&lt;/font&gt;&lt;/p&gt;&apos;
+            status = false
+            break
+        }
+
+    }
+    iter = iter + cnt
+}
+
+
+if(status){
+    return ok
+}else{
+    return fails
+}
+
+
+</script>
+              <sandbox>false</sandbox>
+            </secureScript>
+            <secureFallbackScript plugin="script-security@1.78">
+              <script></script>
+              <sandbox>false</sandbox>
+            </secureFallbackScript>
+          </script>
+          <projectName>JmeterDeploy_Bitbucket</projectName>
+          <projectFullName>examples/JmeterDeploy_Bitbucket</projectFullName>
+          <parameters class="linked-hash-map"/>
+          <referencedParameters>REPOSITORY_URL,REGISTRY_URL,SCRIPTS,PROFILE</referencedParameters>
+          <choiceType>ET_FORMATTED_HTML</choiceType>
+          <omitValueField>false</omitValueField>
+        </org.biouno.unochoice.DynamicReferenceParameter>
+      </parameterDefinitions>
+    </hudson.model.ParametersDefinitionProperty>
+  </properties>
+  <definition class="org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition" plugin="workflow-cps@2.92">
+    <script>import javax.net.ssl.*;
+import java.sql.Timestamp;
+import java.io.IOException;
+import org.yaml.snakeyaml.Yaml;
+import java.text.SimpleDateFormat;
+import org.apache.http.conn.ssl.*;
+import java.security.KeyStoreException;
+import org.apache.http.util.EntityUtils;
+import org.apache.http.entity.StringEntity;
+import java.security.KeyManagementException;
+import org.apache.http.ssl.SSLContextBuilder;
+import java.security.NoSuchAlgorithmException;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.client.utils.URIBuilder;
+import org.apache.http.impl.client.HttpClients;
+import org.apache.http.message.BasicNameValuePair;
+import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.client.entity.UrlEncodedFormEntity;
+import org.apache.http.client.methods.CloseableHttpResponse;
+
+node {
+    def scripts = []
+    def profiles = []
+    def scenarios = []
+    def remote = [:]
+    def buildDir = &quot;/opt/swarmfs/builder/&quot; + &quot;${BUILD_ID}&quot;
+    def confluenceData = [:]
+    Long TestDuration = 0
+    def sdf = new SimpleDateFormat(&quot;MM/dd/yyyy HH:mm:ss&quot;)
+    def startTime =&apos;&apos;
+    def endTime = &apos;&apos;
+    def uri = new URI(&quot;${REPOSITORY_URL}&quot;)
+    def temp = uri.getPath().split(&quot;/&quot;).takeRight(2)
+    def project = temp[0]
+    def repos = temp[1].replaceAll(&quot;.git&quot;,&quot;&quot;)
+    Long delayed = &quot;${DELAYED_START}&quot;.toLong() * 60
+    stage(&apos;Delayed start&apos;){
+        println &quot;Delayed start: ${DELAYED_START} minutes&quot;
+        sleep(&quot;${delayed}&quot;)
+    }
+    stage(&apos;Pre-configure&apos;) {
+        withCredentials([usernamePassword(credentialsId: &apos;docker_swarm&apos;, usernameVariable: &apos;USERNAME&apos;,passwordVariable: &apos;PASSWORD&apos;)]) {
+            println &quot;Set  remote credential&quot;
+            remote.name = &quot;docker_swarm&quot;
+            remote.host = &quot;${MASTER_NODE}&quot;
+            remote.user = &quot;$USERNAME&quot;
+            remote.port = 9022
+            remote.replica = 1
+            remote.password = &quot;$PASSWORD&quot;
+            remote.allowAnyHosts = true
+        }
+        println &quot;Add scripts&quot;
+        &quot;${SCRIPTS}&quot;.split(&quot;,&quot;).each { script -&gt;
+            scripts.add(script)
+        }
+        println &quot;Add profiles&quot;
+        &quot;${PROFILE}&quot;.split(&quot;,&quot;).each { profile -&gt;
+            profiles.add(profile.toLowerCase())
+        }
+        println &quot;Preparation scenario&quot;
+        Integer iter = 0
+        Integer cnt = profiles.size()/scripts.size()
+        def allScriptDuration=[]
+        scripts.each { script -&gt;
+            def scenario =[:]
+            scenario.Scenario = script
+            scenario.TPS = profiles[iter+0].toFloat()
+            scenario.SLA = profiles[iter+1].toFloat()
+            scenario.RumpUpTime = profiles[iter+2].toInteger()
+            scenario.RumpUPSteps = profiles[iter+3].toInteger()
+            scenario.TestDuration = profiles[iter+4].toInteger()
+            allScriptDuration.add(profiles[iter+4].toLong() * 60)
+            scenario.Replicas = profiles[iter+5].toInteger()
+            scenario.CPU = &quot;1&quot;
+            scenario.MEM = &quot;2000M&quot;
+            scenario.Port = GetRandomPort(&quot;${MASTER_NODE}&quot;)
+            scenario.ServiceName = script.replaceAll(~/\.[^\.]+$/, &apos;&apos;).toLowerCase()
+            scenario.BuildDir = &quot;${buildDir}/${SCRIPTS_PATH}&quot;
+            println &quot;generate compose&quot;
+            scenario.Compose = GenerateCompose(scenario)
+            scenarios.add(scenario)
+            iter = iter + cnt
+        }
+        TestDuration = allScriptDuration.max()
+        println &quot;Pre-configure complited&quot;
+    }
+
+    stage(&quot;Global choice&quot;){
+        try{
+            stage(&apos;Create temp dir&apos;) {
+                CreateBuildDir(remote,buildDir)
+            }
+            stage(&apos;Clone repo&apos;){
+                CloneRepo(remote,buildDir)
+            }
+            stage(&apos;Dockerfile&apos;){
+                def endpoint =getAddr(uri,true)
+                if (&quot;${SCRIPTS_PATH}&quot; == &quot;/&quot;){
+                    endpoint = endpoint + &quot;/bitbucket/rest/api/1.0/projects/&quot;+project+&quot;/repos/&quot;+repos+&quot;/raw/Dockerfile&quot;
+                }else{
+                    endpoint = endpoint + &quot;/bitbucket/rest/api/1.0/projects/&quot;+project+&quot;/repos/&quot;+repos+&quot;/raw/${SCRIPTS_PATH}/Dockerfile&quot;
+                }
+                def result = GetDockerfile(endpoint.toString())
+                 if (result.toString() != &quot;null&quot;){
+                    println &quot;Use custom dockerfile&quot;
+                    //def text = new String(result.decodeBase64())
+                    CreateDockerFile(remote,buildDir,result)
+                }else{
+                    println &quot;Use default dockerfile&quot;
+                    CreateDockerFile(remote,buildDir,GenerateDockerFile())
+                }
+            }
+            stage(&apos;Build and push&apos;){
+                def runners = [:]
+                scenarios.each{ scenario -&gt;
+                    writeFile file: &quot;${WORKSPACE}/${BUILD_ID}/${scenario.ServiceName}.yml&quot;, text: scenario.Compose
+                    sshPut remote: remote, from: &quot;${WORKSPACE}/${BUILD_ID}/${scenario.ServiceName}.yml&quot;, into: &quot;${scenario.BuildDir}/${scenario.ServiceName}.yml&quot;
+                    runners[scenario.ServiceName] = { Build(remote,scenario) }
+                }
+                parallel runners
+            }
+            stage(&apos;Deploy service&apos;){
+                def runners = [:]
+                scenarios.each{ scenario -&gt;
+                     runners[scenario.ServiceName] = { Deploy(remote,scenario) }
+                }
+                parallel runners
+            }
+            stage(&apos;Running&apos;) {
+                println &quot;Scenario runner &quot;
+                println &quot;Duration : &quot;+TestDuration
+                def start = new Date()
+                startTime = sdf.format(start)
+                sleep(TestDuration)
+            } 
+        }catch(Exception ex){
+            println ex
+            currentBuild.result = &quot;FAILURE&quot;
+        }finally{
+            stage(&apos;Undeploy&apos;) {
+                def runners = [:]
+                    scenarios.each{ scenario -&gt;
+                        runners[scenario.ServiceName] = { UnDeploy(remote,scenario) }
+                    }
+                parallel runners
+                println &quot;docker stack rm complited&quot;
+                def end = new Date()
+                endTime = sdf.format(end)
+            } 
+            stage(&apos;Cleaning&apos;) {
+                cmd = &quot;rm -rf &quot; &lt;&lt; buildDir
+                sshCommand remote: remote, command: cmd.toString()
+                deleteDir()
+                println &quot;temp dir removed&quot;
+            }
+            stage(&apos;Insert test info&apos;){
+                PushRun(startTime,endTime,scenarios)
+            }
+        }
+    }
+}
+
+def CreateBuildDir(remote,buildDir){
+    def cmd = &quot;mkdir &quot; &lt;&lt; buildDir
+    sshCommand remote: remote, command: cmd.toString()
+    println &quot;dir &quot;&lt;&lt; buildDir &lt;&lt; &quot; created&quot;
+}
+def CloneRepo(remote,buildDir){
+    
+    def cmd = &quot;git clone -c http.sslVerify=false &quot; &lt;&lt; getBitbacketPrivateAddr(&quot;${REPOSITORY_URL}&quot;) &lt;&lt; &quot; &quot; &lt;&lt; buildDir
+    sshCommand remote: remote, command: cmd.toString()
+    println &quot;Clone  ${REPOSITORY_URL} complited&quot;
+}
+
+def Build(remote,scenario){
+    registry = getAddr(&quot;${REGISTRY_URL}&quot;,false)
+    def cmd =  &quot;cd &quot; &lt;&lt; scenario.BuildDir &lt;&lt;  &quot; &amp;&amp; docker build  -t &quot;&lt;&lt; registry &lt;&lt;&quot;/&quot; &lt;&lt; scenario.ServiceName &lt;&lt; &quot; --build-arg script=&quot; &lt;&lt; scenario.Scenario &lt;&lt; &quot; --build-arg imagetag=&quot; &lt;&lt; &quot;${JMETER_BASE_VERSION}&quot; &lt;&lt; &quot; &quot; &lt;&lt;  scenario.BuildDir
+    sshCommand remote: remote, command: cmd.toString()
+    println &quot;docker build complited&quot;
+    cmd = &quot;docker push &quot; &lt;&lt; registry &lt;&lt;&quot;/&quot; &lt;&lt; scenario.ServiceName
+    sshCommand remote: remote, command: cmd.toString()
+    println &quot;docker push complited&quot;
+}
+
+def Deploy(remote,scenario){
+    println &quot;Service deploy&quot;
+    cmd = &quot;cd &quot; &lt;&lt; scenario.BuildDir &lt;&lt; &quot; &amp;&amp;  docker stack deploy  --compose-file &quot; &lt;&lt; scenario.ServiceName &lt;&lt; &quot;.yml &quot; &lt;&lt; scenario.ServiceName
+    sshCommand remote: remote, command: cmd.toString()
+    println &quot;docker stack deploy complited&quot;
+}
+
+def GetRandomPort(master){ 
+    while(true){
+        def port = (int)(Math.random() * ((12000 - 11000) + 1)) + 11000
+        def endpoint = &quot;http://&quot; &lt;&lt; master &lt;&lt; &quot;:&quot; &lt;&lt; port &lt;&lt; &quot;/metrics&quot;
+        println endpoint
+        def get = new URL(endpoint.toString()).openConnection()
+        try {
+            get.setRequestMethod(&quot;GET&quot;);
+            get.connect();
+            println &quot;port is use&quot;
+        }catch(Exception e){
+            println &quot;Exception &quot;+ e 
+            return port
+        }
+    }
+}
+
+def GenerateCompose(scenario){
+    def TPS = (int)(scenario.TPS / scenario.Replicas).round(0)
+    def TARGET = (int)((scenario.TPS * scenario.SLA) / scenario.Replicas).round(0)
+    def STEP = (int)(TPS / scenario.RumpUPSteps)
+    def STEPTIME = scenario.RumpUpTime / scenario.RumpUPSteps + &quot;m&quot;
+    def DURATION = scenario.TestDuration + &quot;m&quot;
+    if (STEP == 0 ){
+        STEP = 1
+    }
+    def TESTNAME =&quot;&quot;
+    if (&quot;${SCRIPTS_PATH}&quot; == &quot;/&quot;){
+        TESTNAME =&quot;${Global}&quot;
+    }else{
+        TESTNAME =&quot;${SCRIPTS_PATH}&quot;
+    }
+    def COMMAND = &quot;mvn verify -DrunId=${BUILD_ID} -Dthreads=${TARGET} -DtestName=${TESTNAME} -DexporterPort=${scenario.Port} -Dduration=${scenario.TestDuration} -D \&quot;load_profile=step(1,${TPS},${STEP},${STEPTIME}) const(${TPS},${DURATION})\&quot;&quot;
+    println COMMAND
+    registry = getAddr(&quot;${REGISTRY_URL}&quot;,false)
+    def compose = new StringBuffer()
+    compose &lt;&lt; &quot;version: &apos;3.3&apos;\nnetworks:\n    swarm_net:\n        external: true\nservices:\n    jmeter:\n        image: &quot; &lt;&lt; registry &lt;&lt; &quot;/${scenario.ServiceName}\n&quot;
+    compose &lt;&lt; &quot;        ports:\n            - ${scenario.Port}:${scenario.Port}\n        command: &apos;${COMMAND}&apos;\n&quot;
+    compose &lt;&lt; &quot;        networks:\n            - swarm_net\n        deploy:\n            replicas: ${scenario.Replicas}\n            resources:\n                limits:\n&quot;
+    compose &lt;&lt; &quot;                    cpus: &apos;${scenario.CPU}&apos;\n                    memory: &apos;${scenario.MEM}&apos;\n            placement:\n                constraints: [node.role != manager]\n&quot;
+    compose &lt;&lt; &quot;        labels:\n            org.label-schema.group: &apos;jmeter&apos;&quot;
+    println compose.toString()
+    return compose.toString()
+}
+
+def UnDeploy(remote,scenario){
+    sshCommand remote: remote, command:&quot;docker stack rm ${scenario.ServiceName}&quot;
+    println &quot;Scenario ${scenario.ServiceName} stoped&quot;
+}
+
+def PushRun(startTime,endTime,scenarios){
+    try{
+        def sdf = new SimpleDateFormat(&quot;MM/dd/yyyy HH:mm:ss&quot;)
+        Date time = sdf.parse(startTime)
+        Timestamp timestamp = new Timestamp(time.getTime())
+        def startTimestamp = timestamp.getTime()
+        time = sdf.parse(endTime)
+        timestamp = new Timestamp(time.getTime())
+        def endTimestamp = timestamp.getTime()
+        def scns=[]
+        scenarios.each { val -&gt;
+            def s = groovy.json.JsonOutput.toJson(
+                name: val.ServiceName, 
+                tps: val.TPS as int, 
+                sla: val.SLA as int,
+                duration:val.TestDuration as int
+            )
+        scns.add(s)
+        }
+        def sc = jsonParse(scns.toString())
+        def data = groovy.json.JsonOutput.toJson(
+            project: &quot;${SCRIPTS_PATH}&quot;, 
+            grafanalink: &quot;http://${GRAFANA_HOST}:3000/d/In_The_Bus/test_overview?orgId=1&amp;refresh=10s&amp;from=${startTimestamp}&amp;to=${endTimestamp}&quot;, 
+            description: &quot;${TEST_DESCRIPTION}&quot;,
+            scenarios:sc
+        )
+        def dt = jsonParse(data)
+        def message = groovy.json.JsonOutput.toJson(id: &quot;${RUN_ID}&quot; as int , starttime: startTimestamp, endtime: endTimestamp, data:dt)
+        println(&quot;Put message&quot;)
+        println(message)
+        def endpoint = &quot;http://${AMMUNITION_HOST}:8090/api/v1/runs/new&quot;
+        def httpClient = createAcceptCrt()
+        def httppost = new HttpPost(endpoint)
+        httppost.setEntity(new StringEntity(message.toString()))
+        def response = httpClient.execute(httppost)
+        println response.getProtocolVersion()    
+        println response.getStatusLine().getStatusCode()
+        println response.getStatusLine().getReasonPhrase() 
+        println response.getStatusLine().toString()
+        def entity = response.getEntity()
+        if (entity != null) {
+            def result = EntityUtils.toString(entity)
+            println result
+        }
+        println &quot;Push run code: &quot;+response.getStatusLine().getStatusCode()
+    }catch(Exception e){
+        println &quot;Exception &quot;+ e 
+    }
+}
+
+def GenerateDockerFile(){
+    def registry = getAddr(&quot;${REGISTRY_URL}&quot;,false)
+    def dockerfile = new StringBuffer()
+        dockerfile &lt;&lt; &apos;ARG imagetag\n&apos;
+        dockerfile &lt;&lt; &apos;FROM &apos; &lt;&lt; registry &lt;&lt;&apos;/jmeter_base:$imagetag\n&apos;
+        dockerfile &lt;&lt; &apos;ENV	JMETER_HOME	/opt/jmeter\n&apos;
+        dockerfile &lt;&lt; &apos;WORKDIR $JMETER_HOME\n&apos;
+        dockerfile &lt;&lt; &apos;ARG script\n&apos;
+        dockerfile &lt;&lt; &apos;COPY $script $JMETER_HOME/src/test/jmeter/\n&apos;
+    return dockerfile.toString()
+}
+
+
+
+def GetDockerfile(endpoint){
+    try {
+        def creds = com.cloudbees.plugins.credentials.CredentialsProvider.lookupCredentials(
+            com.cloudbees.plugins.credentials.common.StandardUsernameCredentials.class, Jenkins.instance, null, null ).find{
+            it.id ==  &apos;bitbucket_user&apos;}
+        def USERNAME = creds.username
+        def PASSWORD = creds.password
+        def httpclient = createAcceptCrt()
+        def httpget = new HttpGet(endpoint)
+        httpget.addHeader(&quot;Authorization&quot;, &quot;Basic &quot;+&quot;${USERNAME}:${PASSWORD}&quot;.bytes.encodeBase64().toString());
+        def response = httpclient.execute(httpget)
+        def entity = response.getEntity()
+        return EntityUtils.toString(entity)
+    }catch(Exception e){
+        println &quot;Exception &quot;+ e 
+        return &quot;FileNotFound&quot;
+    }
+}
+
+
+def CreateDockerFile(remote,buildDir, text){
+    println text
+    writeFile file: &quot;${WORKSPACE}/${BUILD_ID}/Dockerfile&quot;, text: text
+    sshPut remote: remote, from: &quot;${WORKSPACE}/${BUILD_ID}/Dockerfile&quot;, into: &quot;${buildDir}/${SCRIPTS_PATH}/Dockerfile&quot;
+}
+
+
+def createAcceptCrt() throws KeyManagementException, NoSuchAlgorithmException, KeyStoreException {
+    SSLContext sslContext = SSLContextBuilder.create().loadTrustMaterial(new TrustSelfSignedStrategy()).build();
+    HostnameVerifier allowAllHosts = new NoopHostnameVerifier();
+    SSLConnectionSocketFactory connectionFactory = new SSLConnectionSocketFactory(sslContext, allowAllHosts);
+    return HttpClients.custom().setSSLSocketFactory(connectionFactory).build();
+}
+
+def jsonParse(def json) {
+    new groovy.json.JsonSlurperClassic().parseText(json)
+}
+def getAddr(uri,schema){
+    def matches = (uri =~ &quot;^((http[s]?):\\/)?\\/?([^:\\/\\s]+)(:([^\\/]*))?&quot;)
+    def addr = &quot;&quot;
+    if (schema){
+        addr = matches[0].getAt(2)+&quot;://&quot; + matches[0].getAt(3)
+    }else{
+        addr = matches[0].getAt(3)
+    }
+    if (matches[0].getAt(4).toString() != &quot;null&quot; ){
+        addr = addr + matches[0].getAt(4)
+    }
+    return addr
+}
+def getBitbacketPrivateAddr(uri){
+    def creds = com.cloudbees.plugins.credentials.CredentialsProvider.lookupCredentials(
+        com.cloudbees.plugins.credentials.common.StandardUsernameCredentials.class, Jenkins.instance, null, null ).find{
+    it.id ==  &apos;bitbucket_token&apos;}
+    def USERNAME = creds.username
+    def TOKEN = creds.password
+    def matches = (uri =~ &quot;^((http[s]?):\\/)?\\/?([^:\\/\\s]+)(:([^\\/]*))?(.*)&quot;)
+    def addr = matches[0].getAt(2)+&quot;://&quot;+ USERNAME +&quot;:&quot;+ TOKEN +&quot;@&quot;+ matches[0].getAt(3)
+    if (matches[0].getAt(4).toString() != &quot;null&quot; ){
+        addr = addr + matches[0].getAt(4)
+    }
+    addr = addr + matches[0].getAt(6)
+    return addr
+}</script>
+    <sandbox>true</sandbox>
+  </definition>
+  <triggers/>
+  <disabled>false</disabled>
+</flow-definition>

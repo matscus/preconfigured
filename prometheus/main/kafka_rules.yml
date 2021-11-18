@@ -1,0 +1,13 @@
+groups:
+  - name: kafka_consumer
+    rules:
+    - record: kafka:kafka_consumergroup_lag:sum
+      expr: sum(kafka_consumergroup_lag) by (instance,consumergroup, topic) 
+    - record: kafka:kafka_consumergroup_current_offset:sumbydelta5m
+      expr:  sum(delta(kafka_consumergroup_current_offset[5m])/5) by (instance,consumergroup, topic)
+  - name: kafka_partition
+    rules:
+    - record: kafka:kafka_topic_partition_current_offset:sumbyrate1m
+      expr: sum(rate(kafka_topic_partition_current_offset[1m])) by (instance,topic)
+    - record: kafka:kafka_topic_partitions:sum
+      expr: sum by(instance,topic) (kafka_topic_partitions)

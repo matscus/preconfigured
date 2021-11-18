@@ -1,0 +1,7 @@
+
+telegram_token: ${TELEGRAM_BOT_TOKEN}
+template_path: "/opt/alertmanagerbot/template.tmpl"
+time_zone: "europe/moscow"
+split_token: "|"
+time_outdata: "01/01/2021 15:04:05"
+split_msg_byte: 10000

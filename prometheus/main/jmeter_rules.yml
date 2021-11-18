@@ -1,0 +1,55 @@
+groups:
+  - name: jmeter_requests
+    rules:
+    - record: jmeter:total_tps:sum_rate30s
+      expr: sum by (responseCode,testName,requestStatus,runId ) (rate(jmeter_requests[30s]))
+    - record: jmeter:active_threads:sum
+      expr: sum by (nodeName,testName,runId) (jmeter_active_threads)
+    - record: jmeter:requests:sum_rate10s
+      expr: sum by (responseCode,testName,requestStatus,responseMessage, runId ) (rate(jmeter_requests[10s]))
+ 
+  - name: jmeter_response_time
+    rules:
+    - record: jmeter:response_time_total:sum_rate10s
+      expr: sum(rate(jmeter_response_time_sum[10s])) by(requestName,testName,runId)
+    - record: jmeter:response_time_count_total:sum_rate10s
+      expr: sum(rate(jmeter_response_time_count[10s])) by(requestName,testName,runId)
+    - record: jmeter:response_time_total:sum_rate10s
+      expr: |2
+          jmeter:response_time_sum:sum_rate10s
+        /
+          jmeter:response_time_count:sum_rate10s
+          
+    - record: jmeter:response_time:avg
+      expr: avg(jmeter_response_time >= 0) by (requestName,testName,runId,quantile)
+
+  - name: jmeter_agregate
+    rules:
+    - record: jmeter:agregate_requests:max_over_time_rate10s
+      expr:   max_over_time(jmeter_requests[10s])
+    - record: jmeter:agregate_requests:min_over_time_rate10s
+      expr:   min_over_time(jmeter_requests[10s])
+    - record: jmeter:agregate_requests:count
+      expr: |2
+          sum(jmeter:agregate_requests:max_over_time_rate10s) by (runId, requestName,testName,responseMessage)
+        -
+          sum(jmeter:agregate_requests:min_over_time_rate10s) by (runId, requestName,testName,responseMessage)
+    - record: jmeter:agregate_response_time_sum_max_min:avg
+      expr: |2
+          avg(max_over_time(jmeter_response_time_sum[10s]))by (runId, requestName,testName,responseMessage)
+        -
+          avg(min_over_time(jmeter_response_time_sum[10s]))by (runId, requestName,testName,responseMessage)
+    - record: jmeter:agregate_response_time_count_max_min:avg
+      expr: |2
+          avg(max_over_time(jmeter_response_time_count[10s]))by (runId, requestName,testName,responseMessage)
+        -
+          avg(min_over_time(jmeter_response_time_count[10s]))by (runId, requestName,testName,responseMessage)
+    - record: jmeter:agregate_response_time:avg
+      expr: |2
+           jmeter:agregate_response_time_sum_max_min:avg
+        /
+          jmeter:agregate_response_time_count_max_min:avg
+  - name: jmeter_error
+    rules:
+    - record: jmeter:agregate_requests_responseCode:sum_rate10s
+      expr:   sum by (responseCode) (rate(jmeter_requests[10s]))

@@ -1,0 +1,138 @@
+pg_database:
+  query: " SELECT pg_database.datname, pg_database_size(pg_database.datname) as size FROM pg_database"
+  metrics:
+    - datname:
+        usage: "LABEL"
+        description: "Name of the database"
+    - size:
+        usage: "GAUGE"
+        description: "Disk space used by the database"
+
+pg_stat_statements:
+  query: 'SELECT 
+queryid, 
+datname, 
+left(query, 100) as short_query, 
+sum(plans) as plans,
+sum(total_plan_time) as total_plan_time,
+min(min_plan_time) as min_plan_time, 
+max(max_plan_time) as max_plan_time, 
+avg(mean_plan_time) as mean_plan_time,
+sum(stddev_plan_time) as stddev_plan_time,
+sum(calls) as calls, 
+sum(total_exec_time) as total_exec_time, 
+min(min_exec_time) as min_time, 
+max(max_exec_time) as max_exec_time, 
+avg(mean_exec_time) as mean_exec_time,
+sum(stddev_exec_time) as stddev_exec_time,
+sum(rows) as rows,
+sum(shared_blks_hit) as shared_blks_hit,
+sum(shared_blks_read) as shared_blks_read,
+sum(shared_blks_dirtied) as shared_blks_dirtied,
+sum(shared_blks_written) as shared_blks_written,
+sum(local_blks_hit) as local_blks_hit,
+sum(local_blks_read)as local_blks_read ,
+sum(local_blks_dirtied)as local_blks_dirtied,
+sum(local_blks_written )as local_blks_written,
+sum(temp_blks_read)as temp_blks_read,
+sum(temp_blks_written)as temp_blks_written,
+sum(blk_read_time)as blk_read_time,
+sum(blk_write_time )as blk_write_time,
+sum(wal_records)as wal_records,
+sum(wal_fpi) as wal_fpi,
+sum(wal_bytes)as wal_bytes
+FROM pg_stat_statements JOIN pg_database ON pg_stat_statements.dbid = pg_database.oid group by queryid, short_query, datname'
+  metrics:
+    - queryid:
+        usage: "LABEL"
+        description: "Query ID"
+    - datname:
+        usage: "LABEL"
+        description: "Database name"
+    - short_query:
+        usage: "LABEL"
+        description: "Query limited to 100 symbols"
+    - plans:
+        usage: "COUNTER"
+        description: "Number of times the statement was planned"
+    - total_plan_time:
+        usage: "GAUGE"
+        description: "Total time spent planning the statement, in milliseconds"
+    - min_plan_time:
+        usage: "GAUGE"
+        description: "Minimum time spent planning the statement, in milliseconds"
+    - max_plan_time:
+        usage: "GAUGE"
+        description: "Maximum time spent planning the statement, in milliseconds"
+    - mean_plan_time:
+        usage: "GAUGE"
+        description: "Mean time spent planning the statement, in milliseconds"
+    - stddev_plan_time:
+        usage: "GAUGE"
+        description: "Population standard deviation of time spent planning the statement, in milliseconds"
+    - calls:
+        usage: "COUNTER"
+        description: "Number of times executed"
+    - total_exec_time:
+        usage: "COUNTER"
+        description: "Total time spent in the statement, in milliseconds"
+    - min_exec_time:
+        usage: "GAUGE"
+        description: "Minimum time spent in the statement, in milliseconds"
+    - max_exec_time:
+        usage: "GAUGE"
+        description: "Maximum time spent in the statement, in milliseconds"
+    - mean_exec_time:
+        usage: "GAUGE"
+        description: "Mean time spent in the statement, in milliseconds"
+    - stddev_exec_time:
+        usage: "GAUGE"
+        description: "Population standard deviation of time spent executing the statement, in milliseconds"
+    - rows:
+        usage: "COUNTER"
+        description: "Total number of rows retrieved or affected by the statement"
+    - shared_blks_hit:
+        usage: "COUNTER"
+        description: "Total number of shared block cache hits by the statement"
+    - shared_blks_read:
+        usage: "COUNTER"
+        description: "Total number of shared blocks read by the statement"
+    - shared_blks_dirtied:
+        usage: "COUNTER"
+        description: "Total number of shared blocks dirtied by the statement"
+    - shared_blks_written:
+        usage: "COUNTER"
+        description: "Total number of shared blocks written by the statement"
+    - local_blks_hit:
+        usage: "COUNTER"
+        description: "Total number of local block cache hits by the statement"
+    - local_blks_read:
+        usage: "COUNTER"
+        description: "Total number of local blocks read by the statement"
+    - local_blks_dirtied:
+        usage: "COUNTER"
+        description: "Total number of local blocks dirtied by the statement"
+    - local_blks_written:
+        usage: "COUNTER"
+        description: "Total number of local blocks written by the statement"
+    - temp_blks_read:
+        usage: "COUNTER"
+        description: "Total number of temp blocks read by the statement"
+    - temp_blks_written:
+        usage: "COUNTER"
+        description: "Total number of temp blocks written by the statement"
+    - blk_read_time:
+        usage: "COUNTER"
+        description: "Total time the statement spent reading blocks, in milliseconds"
+    - blk_write_time:
+        usage: "COUNTER"
+        description: "Total time the statement spent writing blocks, in milliseconds"
+    - wal_records:
+        usage: "COUNTER"
+        description: "Total number of WAL records generated by the statement"
+    - wal_fpi:
+        usage: "COUNTER"
+        description: "Total number of WAL full page images generated by the statement"
+    - wal_bytes:
+        usage: "COUNTER"
+        description: "Total amount of WAL generated by the statement in bytes"

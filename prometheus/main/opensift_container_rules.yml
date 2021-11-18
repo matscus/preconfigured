@@ -1,0 +1,57 @@
+groups:
+  - name:  container_cpu
+    rules:
+    - record: container:container_cpu_usage_seconds_total:avgbyrate5m
+      expr: avg(rate(container_cpu_usage_seconds_total [5m]) *100 ) by(namespace,pod,container) 
+    - record: container:container_spec_cpu_quota:avg
+      expr: avg (container_spec_cpu_quota / 100000)by(namespace,pod,container)
+    - record: container:container_cpu_usage_by_quota:avg
+      expr: |2
+          container:container_cpu_usage_seconds_total:avgbyrate5m
+        /
+          container:container_spec_cpu_quota:avg
+  - name: container_memory
+    rules:
+    - record: container:container_memory_usage_bytes:total  
+      expr: |2
+          container_memory_usage_bytes
+        /
+          container_spec_memory_limit_bytes
+        *
+          100
+    - record: container:container_memory_total_bytes:sum  
+      expr: |2
+          sum(container_memory_usage_bytes)
+        /
+          sum(container_spec_memory_limit_bytes)
+        *
+          100 
+    - record: container:container_memory_pod_total_bytes:sum 
+      expr: sum(container_memory_usage_bytes) by (namespace, pod,container)      
+  - name:  container_swap
+    rules:
+    - record: container:node_namespace_pod_container_memory_swap:rate5m
+      expr: rate(node_namespace_pod_container:container_memory_swap{container!="", container!="POD"} [5m]) * 100
+  
+  - name: container_net
+    rules:
+    - record:  container:container_network_receive_bytes_total:rate5m
+      expr: rate(container_network_receive_bytes_total[5m])
+    - record:  container:container_network_transmit_bytes_total:rate5m
+      expr: rate(container_network_transmit_bytes_total[5m])
+      
+  - name:  jvm
+    rules:
+    - record: jvm:gc_pause_seconds_count:rate1m
+      expr:   rate(jvm_gc_pause_seconds_count[1m])
+    - record:  jvm:gc_pause_seconds_sum:rate1m
+      expr:   rate(jvm_gc_pause_seconds_sum[1m])
+    - record:  jvm:gc_memory_promoted_bytes_total:rate1m
+      expr:   rate(jvm_gc_memory_promoted_bytes_total[1m])
+    - record:  jvm:gc_memory_allocated_bytes_total:rate1m
+      expr:  rate(jvm_gc_memory_allocated_bytes_total[1m])
+    - record:  jvm:classes_loaded_classes:rate1m
+      expr:  rate(jvm_classes_loaded_classes[1m])
+    - record: jvm:classes_unloaded_classes_totalrate1m
+      expr: rate(jvm_classes_unloaded_classes_total[1m])
+

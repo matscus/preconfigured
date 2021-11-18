@@ -1,0 +1,2 @@
+def swarmNode="172.27.193.132"
+return [swarmNode+":selected:disabled"]

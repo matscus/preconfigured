@@ -1,0 +1,242 @@
+# my global config
+global:
+  scrape_interval: 15s # Set the scrape interval to every 15 seconds. Default is every 1 minute.
+  evaluation_interval: 15s # Evaluate rules every 15 seconds. The default is every 1 minute.
+  # scrape_timeout is set to the global default (10s).
+
+# Alertmanager configuration
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets:
+          # - alertmanager:9093
+
+# Load rules once and periodically evaluate them according to the global 'evaluation_interval'.
+rule_files:
+  # - "first_rules.yml"
+  # - "second_rules.yml"
+
+# A scrape configuration containing exactly one endpoint to scrape:
+# Here it's Prometheus itself.
+scrape_configs:
+  # The job name is added as a label `job=<job_name>` to any timeseries scraped from this config.
+  - job_name: "prometheus"
+
+    # metrics_path defaults to '/metrics'
+    # scheme defaults to 'http'.
+
+    static_configs:
+      - targets: ["localhost:9090"]
+
+ #cadvisor_exporter
+  - job_name:       'cadvisor_exporter'
+    scrape_interval: 30s
+    static_configs:
+      - targets: ['172.27.193.51:8888','172.27.192.153:8888','172.27.194.34:8888','172.27.193.43:8888','172.27.193.58:8888','172.27.193.243:8888','172.27.195.117:8888','172.27.194.197:8888','172.27.195.140:8888','172.27.192.252:8888','172.27.195.32:8888','172.27.193.200:8888','172.27.194.35:8888','172.27.195.73:8888','172.27.193.12:8888','172.27.194.142:8888','172.27.193.21:8888','172.27.193.184:8888','172.27.194.53:8888','172.27.193.75:8888','172.27.193.111:8888','172.27.195.75:8888','172.27.193.181:8888','172.27.194.29:8888','172.27.193.250:8888','172.27.194.105:8888','172.27.195.72:8888','172.27.194.124:8888','172.27.194.2:8888','172.27.193.198:8888','172.27.195.17:8888','172.27.194.239:8888','172.27.194.66:8888','172.27.195.8:8888','172.27.195.69:8888','172.27.195.182:8888','172.27.192.250:8888','172.27.195.173:8888','172.27.192.7:8888','172.27.193.20:8888','172.27.192.79:8888','172.27.192.53:8888','172.27.192.240:8888']
+        labels:
+          group: 'NT stand'
+          service: 'Swarm slaves'
+      - targets: ['172.27.193.132:8888']
+        labels:
+          group: 'NT stand'
+          service: 'Swarm master'
+ #test_app
+  - job_name:       'test_app'
+    scrape_interval: 10s
+    static_configs:
+      - targets: ['172.27.193.183:9980']
+        labels:
+          group: 'NT stand'
+          service: 'gin'
+      - targets: ['172.27.193.183:9990']
+        labels:
+          group: 'NT stand'
+          service: 'gorilla'
+
+ #node_exporter
+  - job_name:       'node_exporter'
+    scrape_interval: 10s
+    static_configs:
+        # Test stand
+      - targets: ['172.27.193.132:9100']
+        labels:
+          group: 'NT stand'
+          service: 'Swarm master'
+      - targets: ['172.27.192.63:9100']
+        labels:
+          group: 'NT stand'
+          service: 'Prometheus scaper'
+      - targets: ['172.27.194.51:9100']
+        labels:
+          group: 'NT stand'
+          service: 'Ammunition'
+      - targets: ['172.27.192.35:9100']
+        labels:
+          group: 'NT stand'
+          service: 'Prometheus main'
+      - targets: ['172.27.192.59:9100']
+        labels:
+          group: 'NT stand'
+          service: 'Postgres'
+      - targets: ['172.27.193.51:9100','172.27.192.153:9100','172.27.194.34:9100','172.27.193.43:9100','172.27.193.58:9100','172.27.193.243:9100','172.27.195.117:9100','172.27.194.197:9100','172.27.195.140:9100','172.27.192.252:9100','172.27.195.32:9100','172.27.193.200:9100','172.27.194.35:9100','172.27.195.73:9100','172.27.193.12:9100','172.27.194.142:9100','172.27.193.21:9100','172.27.193.184:9100','172.27.194.53:9100','172.27.193.75:9100','172.27.193.111:9100','172.27.195.75:9100','172.27.193.181:9100','172.27.194.29:9100','172.27.193.250:9100','172.27.194.105:9100','172.27.195.72:9100','172.27.194.124:9100','172.27.194.2:9100','172.27.193.198:9100','172.27.195.17:9100','172.27.194.239:9100','172.27.194.66:9100','172.27.195.8:9100','172.27.195.69:9100','172.27.195.182:9100','172.27.192.250:9100','172.27.195.173:9100','172.27.192.7:9100','172.27.193.20:9100','172.27.192.79:9100','172.27.192.53:9100','172.27.192.240:9100']
+        labels:
+          group: 'NT stand'
+          service: 'Swarm slaves'
+
+        #IAM Hosts
+      - targets: ['172.27.194.99:19100','172.27.195.187:19100']
+        labels:
+          group: 'IAM'
+          service: 'LB' 
+      - targets: ['172.27.193.94:19100','172.27.192.80:19100']
+        labels:
+          group: 'IAM'
+          service: 'Proxy' 
+      - targets: ['172.27.194.201:19100','172.27.194.135:19100']
+        labels:
+          group: 'IAM'
+          service: 'Keycloak' 
+      - targets: ['172.27.195.243:19100','172.27.195.220:19100']  
+        labels:
+          group: 'IAM'
+          service: 'Syslog-ng' 
+      - targets: ['172.27.194.255:19100']  
+        labels:
+          group: 'IAM'
+          service: 'ECTD arbitr Postgres' 
+      - targets: ['172.27.195.37:19100','172.27.195.178:19100']  
+        labels:
+          group: 'IAM'
+          service: 'Postgres keycloak' 
+        #RDS Hosts
+      - targets: ['172.27.195.230:19100','172.27.192.124:19100']  
+        labels:
+          group: 'RDS'
+          service: 'WildFly' 
+        #RDS Hosts
+      - targets: ['172.27.194.160:19100','172.27.192.4:19100']  
+        labels:
+          group: 'SP_TS'
+          service: 'OTT' 
+      - targets: ['172.27.193.95:19100','172.27.193.95:19100']  
+        labels:
+          group: 'SP_TS'
+          service: 'Logger' 
+      - targets: ['172.27.195.183:19100','172.27.193.238:19100']  
+        labels:
+          group: 'SP_TS'
+          service: 'Spas_WildFly' 
+      - targets: ['172.27.194.223:19100','172.27.192.214:19100']  
+        labels:
+          group: 'SP_TS'
+          service: 'Spas_Nginx' 
+        #IAG
+      - targets: ['172.27.193.26:19100','172.27.194.125:19100','172.27.192.251:19100','172.27.192.27:19100']  
+        labels:
+          group: 'IAG'
+          service: 'Nginx' 
+        #AUDIT
+      - targets: ['172.27.193.251:19100']  
+        labels:
+          group: 'Audit'
+          service: 'UI_WildFly'
+        #CSM
+      - targets: ['172.27.193.120:19100']  
+        labels:
+          group: 'CSM'
+          service: 'SP' 
+        #Cloudera
+      - targets: ['172.27.195.147:19100']  
+        labels:
+          group: 'Cloudera'
+          service: 'Audit Postgres' 
+      - targets: ['172.27.194.75:19100','172.27.194.10:19100','172.27.195.123:19100','172.27.193.53:19100','172.27.192.90:19100']  
+        labels:
+          group: 'Cloudera'
+          service: 'Hadoop ' 
+        #Common
+      - targets: ['172.27.194.65:19100']  
+        labels:
+          group: 'Common'
+          service: 'ECTD arbitr Postgres' 
+      - targets: ['172.27.194.109:19100','172.27.192.231:19100']  
+        labels:
+          group: 'Common'
+          service: 'ECTD arbitr Postgres' 
+      - targets: ['172.27.195.170:19100','172.27.193.170:19100','172.27.192.219:19100','172.27.193.38:19100','172.27.193.40:19100','172.27.193.161:19100']  
+        labels:
+          group: 'Common'
+          service: 'Kafka' 
+        #Abyss
+      - targets: ['172.27.193.179:19100','172.27.193.13:19100','172.27.193.244:19100']  
+        labels:
+          group: 'Abyss'
+          service: 'Analitycal_storage' 
+      - targets: ['172.27.193.115:19100','172.27.193.84:19100']  
+        labels:
+          group: 'Abyss'
+          service: 'Coordinator' 
+      - targets: ['172.27.195.30:19100','172.27.195.113:19100','172.27.194.131:19100']  
+        labels:
+          group: 'Abyss'
+          service: 'Fulltext_index_storage' 
+      - targets: ['172.27.195.156:19100','172.27.195.26:19100','172.27.195.41:19100']  
+        labels:
+          group: 'Abyss'
+          service: 'Kafka' 
+      - targets: ['172.27.194.36:19100','172.27.195.151:19100','172.27.193.18:19100','172.27.193.131:19100','172.27.195.154:19100']  
+        labels:
+          group: 'Abyss'
+          service: 'Hadoop' 
+      - targets: ['172.27.192.109:19100']  
+        labels:
+          group: 'Abyss'
+          service: 'Nginx' 
+
+ #Postgres_exporters
+  - job_name:       'postgres_exporters'
+    scrape_interval: 10s
+    static_configs:
+        # NT Stand
+      - targets: ['172.27.192.59:9187'] 
+        labels:
+          group: 'NT stand'
+          service: 'Postgres' 
+          
+    #ammunition
+  - job_name:       'ammunition'
+    scrape_interval: 10s
+    static_configs:
+      - targets: ['172.27.194.51:10000']  
+        labels:
+          group: 'NT stand'
+          service: 'Ammunition'
+
+    #Federates
+  - job_name: 'federate_frontend'
+    honor_labels: true
+    metrics_path: '/federate'
+    params:
+      'match[]':
+        - '{__name__=~"jvm_.+"}'
+        - '{__name__=~"jmx_.+"}'
+    static_configs:
+      - targets:
+        - 'unimon-agent-lt2.gt-sol-nt2-frontends-01.apps.ocp.nt-01.solution.gt'
+
+  - job_name: 'federate_coreplatform'
+    honor_labels: true
+    metrics_path: '/federate'
+    params:
+      'match[]':
+        - '{__name__=~"jvm_.+"}'
+        - '{__name__=~"jmx_.+"}'
+        - '{__name__=~"jdbc_.+"}'
+        - '{__name__=~"UFS_.+"}'
+    static_configs:
+      - targets:
+        - 'unimon-agent.gt-sol-nt2-coreplatform-01.apps.ocp.nt-01.solution.gt'
+        
+ 
+remote_write:
+  - url: "http://172.27.192.35:9090/api/v1/write"

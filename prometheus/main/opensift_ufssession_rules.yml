@@ -1,0 +1,74 @@
+groups:
+  - name: ufs_session
+    rules:
+    - record: ufs_session:ufs_sds_new_session_succes:rate1m
+      expr: rate(UFS_SDS_NEW_SESSION_SUCCESS_count[1m])
+    - record: ufs_session:ufs_sds_active_session_count:rate1m
+      expr: rate(UFS_SDS_ACTIVE_SESSION_COUNT_count[1m])
+    - record: ufs_session:ufs_sds_section_write_count:rate1m
+      expr: rate(UFS_SDS_SECTION_WRITE_count[1m])
+    - record: ufs_session:ufs_sds_invalidate_session_write_count:rate1m
+      expr: rate(UFS_SDS_INVALIDATED_SESSION_WRITE_COUNT_count[1m])
+    - record: ufs_session:ufs_sds_invalidate_session_read_count:rate1m
+      expr: rate(UFS_SDS_INVALIDATED_SESSION_READ_COUNT_count[1m])
+    - record: ufs_session:ufs_sds_invalidate_by_timeout_session_read_count:rate1m
+      expr: rate(UFS_SDS_INVALIDATED_BY_TIMEOUT_SESSION_LIFETIME_count[1m])
+    - record: ufs_session:ufs_sds_slave_duration_count:rate1m
+      expr: irate(UFS_SDS_SLAVE_DURATION_count[1m])
+    - record: ufs_session:ufs_sds_slave_duration_max:rate1m
+      expr: irate(UFS_SDS_SLAVE_DURATION_max[1m])
+    - record: ufs_session:ufs_sds_slave_duration_sum:rate1m
+      expr: irate(UFS_SDS_SLAVE_DURATION_sum[1m])
+    - record: ufs_session:ufs_sds_delete_empty_session_from_slave_cashe_count:rate1m
+      expr: irate(UFS_SDS_DELETE_EMPTY_SESSION_FROM_SLAVE_CACHE_count[1m])
+    - record: ufs_session:ufs_sds_delete_empty_session_from_slave_cashe_max:rate1m
+      expr: irate(UFS_SDS_DELETE_EMPTY_SESSION_FROM_SLAVE_CACHE_max[1m])
+    - record: ufs_session:ufs_sds_delete_empty_session_from_slave_cashe_sum:rate1m
+      expr: irate(UFS_SDS_DELETE_EMPTY_SESSION_FROM_SLAVE_CACHE_sum[1m])
+    - record: ufs_session:keycloack_success_counter_total:rate10s
+      expr: rate(keycloack_success_counter_total[30s])
+    - record: ufs_session:keycloack_fail_counter_total:rate10s
+      expr:   rate(keycloack_fail_counter_total[30s])
+    - record: ufs_session:ufs_provider_success_counter_total:rate10s
+      expr:   rate(ufs_provider_success_counter_total[30s])
+    - record: ufs_session:ufs_provider_fail_counter_total:rate10s
+      expr:    rate(ufs_provider_fail_counter_total[30s])
+    - record: ufs_session:check_session_counter_seconds_count:sum_rate10s
+      expr:     sum(rate(check_session_counter_seconds_count[30s]))by(instance,pod)
+    - record: ufs_session:create_session_counter_seconds_count:sum_rate10s
+      expr:   sum(rate(create_session_counter_seconds_count[30s]))by(instance,pod)
+    - record: ufs_session:create_session_counter_seconds_max:rate10s
+      expr:   sum(rate(create_session_counter_seconds_max[30s]))by(instance,pod)
+    - record: ufs_session:sds_servant_register_session_count:rate30s
+      expr:  rate(UFS_SDS_SERVANT_REGISTER_SESSIONS_COUNT_count[30s])
+    - record: ufs_session:plt_rest_duration:total
+      expr: |2
+          PLT_REST_DURATION_sum
+        /
+          PLT_REST_DURATION_count  
+    - record: ufs_session:sds_master_duration_max:sum
+      expr: sum(UFS_SDS_MASTER_DURATION_max)by(pod,ufsModule_consumerServiceUrl)
+    - record: ufs_session:sds_master_duration_max:max
+      expr: max(UFS_SDS_MASTER_DURATION_max)by(ufsModule_consumerServiceUrl)
+    - record: ufs_session:plt_rest_duration_sum:rate30s
+      expr: |2
+          rate(PLT_REST_DURATION_sum[30s])
+        /
+          rate(PLT_REST_DURATION_count[30s])
+    - record: ufs_session:ssds_slave_duration_sum:avg_rate30s
+      expr: |2
+          avg by(method) (rate(UFS_SDS_SLAVE_DURATION_sum[30s])
+        /
+          rate(UFS_SDS_SLAVE_DURATION_count[40s]))
+    - record: ufs_session:sds_master_duration_count:sum_rate30s
+      expr:  sum(rate(UFS_SDS_MASTER_DURATION_count[30s]))by(instance,pod)
+    - record: ufs_session:sds_slave_duration_count:sum_rate30s
+      expr:  sum(rate(UFS_SDS_SLAVE_DURATION_count[30s]))by(instance,pod)
+    - record: ufs_session:sds_sticky_session_mistake_detected_count:rate30s
+      expr:  rate(UFS_SDS_STICKY_SESSION_MISTAKE_DETECTED_count[30s])
+    - record: ufs_session:sds_slave_duration_sum:irate30s
+      expr:  irate(UFS_SDS_SLAVE_DURATION_sum[30s])
+    - record: ufs_session:sds_slave_duration_max:irate30s
+      expr: irate(UFS_SDS_SLAVE_DURATION_max[1m])
+    - record: ufs_session:sds_slave_duration_count:irate30s
+      expr: rate(UFS_SDS_SLAVE_DURATION_count[1m])

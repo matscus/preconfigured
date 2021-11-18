@@ -1,0 +1,349 @@
+import javax.net.ssl.*;
+import java.sql.Timestamp;
+import java.io.IOException;
+import org.yaml.snakeyaml.Yaml;
+import java.text.SimpleDateFormat;
+import org.apache.http.conn.ssl.*;
+import java.security.KeyStoreException;
+import org.apache.http.util.EntityUtils;
+import org.apache.http.entity.StringEntity;
+import java.security.KeyManagementException;
+import org.apache.http.ssl.SSLContextBuilder;
+import java.security.NoSuchAlgorithmException;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.client.utils.URIBuilder;
+import org.apache.http.impl.client.HttpClients;
+import org.apache.http.message.BasicNameValuePair;
+import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.client.entity.UrlEncodedFormEntity;
+import org.apache.http.client.methods.CloseableHttpResponse;
+
+node {
+    def scripts = []
+    def profiles = []
+    def scenarios = []
+    def remote = [:]
+    def buildDir = "/opt/swarmfs/builder/" + "${BUILD_ID}"
+    def confluenceData = [:]
+    Long TestDuration = 0
+    def sdf = new SimpleDateFormat("MM/dd/yyyy HH:mm:ss")
+    def startTime =''
+    def endTime = ''
+    def uri = new URI("${REPOSITORY_URL}")
+    def temp = uri.getPath().split("/").takeRight(2)
+    def project = temp[0]
+    def repos = temp[1].replaceAll(".git","")
+    Long delayed = "${DELAYED_START}".toLong() * 60
+    stage('Delayed start'){
+        println "Delayed start: ${DELAYED_START} minutes"
+        sleep("${delayed}")
+    }
+    stage('Pre-configure') {
+        withCredentials([usernamePassword(credentialsId: 'docker_swarm', usernameVariable: 'USERNAME',passwordVariable: 'PASSWORD')]) {
+            println "Set  remote credential"
+            remote.name = "docker_swarm"
+            remote.host = "${MASTER_NODE}"
+            remote.user = "$USERNAME"
+            remote.port = 9022
+            remote.replica = 1
+            remote.password = "$PASSWORD"
+            remote.allowAnyHosts = true
+        }
+        println "Add scripts"
+        "${SCRIPTS}".split(",").each { script ->
+            scripts.add(script)
+        }
+        println "Add profiles"
+        "${PROFILE}".split(",").each { profile ->
+            profiles.add(profile.toLowerCase())
+        }
+        println "Preparation scenario"
+        Integer iter = 0
+        Integer cnt = profiles.size()/scripts.size()
+        def allScriptDuration=[]
+        scripts.each { script ->
+            def scenario =[:]
+            scenario.Scenario = script
+            scenario.TPS = profiles[iter+0].toFloat()
+            scenario.SLA = profiles[iter+1].toFloat()
+            scenario.RumpUpTime = profiles[iter+2].toInteger()
+            scenario.RumpUPSteps = profiles[iter+3].toInteger()
+            scenario.TestDuration = profiles[iter+4].toInteger()
+            allScriptDuration.add(profiles[iter+4].toLong() * 60)
+            scenario.Replicas = profiles[iter+5].toInteger()
+            scenario.CPU = "1"
+            scenario.MEM = "2000M"
+            scenario.Port = GetRandomPort("${MASTER_NODE}")
+            scenario.ServiceName = script.replaceAll(~/\.[^\.]+$/, '').toLowerCase()
+            scenario.BuildDir = "${buildDir}/${SCRIPTS_PATH}"
+            println "generate compose"
+            scenario.Compose = GenerateCompose(scenario)
+            scenarios.add(scenario)
+            iter = iter + cnt
+        }
+        TestDuration = allScriptDuration.max()
+        println "Pre-configure complited"
+    }
+
+    stage("Global choice"){
+        try{
+            stage('Create temp dir') {
+                CreateBuildDir(remote,buildDir)
+            }
+            stage('Clone repo'){
+                CloneRepo(remote,buildDir)
+            }
+            stage('Dockerfile'){
+                def endpoint =getAddr(uri,true)
+                if ("${SCRIPTS_PATH}" == "/"){
+                    endpoint = endpoint +"/api/v1/repos/" << project << '/' << repos << '/contents' << '/Dockerfile'
+                }else{
+                    endpoint = endpoint +"/api/v1/repos/" << project << '/' << repos << '/contents' << '/' << "${SCRIPTS_PATH}" << '/Dockerfile'
+                }
+                def result = GetDockerfile(endpoint.toString())
+                 if (result.toString() != "null"){
+                    println "Use custom dockerfile"
+                    def text = new String(result.decodeBase64())
+                    CreateDockerFile(remote,buildDir,text)
+                }else{
+                    println "Use default dockerfile"
+                    CreateDockerFile(remote,buildDir,GenerateDockerFile())
+                }
+            }
+            stage('Build and push'){
+                def runners = [:]
+                scenarios.each{ scenario ->
+                    writeFile file: "${WORKSPACE}/${BUILD_ID}/${scenario.ServiceName}.yml", text: scenario.Compose
+                    sshPut remote: remote, from: "${WORKSPACE}/${BUILD_ID}/${scenario.ServiceName}.yml", into: "${scenario.BuildDir}/${scenario.ServiceName}.yml"
+                    runners[scenario.ServiceName] = { Build(remote,scenario) }
+                }
+                parallel runners
+            }
+            stage('Deploy service'){
+                def runners = [:]
+                scenarios.each{ scenario ->
+                     runners[scenario.ServiceName] = { Deploy(remote,scenario) }
+                }
+                parallel runners
+            }
+            stage('Running') {
+                println "Scenario runner "
+                println "Duration : "+TestDuration
+                def start = new Date()
+                startTime = sdf.format(start)
+                sleep(TestDuration)
+            } 
+        }catch(Exception ex){
+            println ex
+            currentBuild.result = "FAILURE"
+        }finally{
+            stage('Undeploy') {
+                def runners = [:]
+                    scenarios.each{ scenario ->
+                        runners[scenario.ServiceName] = { UnDeploy(remote,scenario) }
+                    }
+                parallel runners
+                println "docker stack rm complited"
+                def end = new Date()
+                endTime = sdf.format(end)
+            } 
+            stage('Cleaning') {
+                cmd = "rm -rf " << buildDir
+                sshCommand remote: remote, command: cmd.toString()
+                deleteDir()
+                println "temp dir removed"
+            }
+            stage('Insert test info'){
+                PushRun(startTime,endTime,scenarios)
+            }
+        }
+    }
+}
+
+def CreateBuildDir(remote,buildDir){
+    def cmd = "mkdir " << buildDir
+    sshCommand remote: remote, command: cmd.toString()
+    println "dir "<< buildDir << " created"
+}
+def CloneRepo(remote,buildDir){
+    def cmd = "git clone -c http.sslVerify=false ${REPOSITORY_URL} " << buildDir
+    sshCommand remote: remote, command: cmd.toString()
+    println "Clone  ${REPOSITORY_URL} complited"
+}
+
+def Build(remote,scenario){
+    registry = getAddr("${REGISTRY_URL}",false)
+    def cmd =  "cd " << scenario.BuildDir <<  " && docker build  -t "<< registry <<"/" << scenario.ServiceName << " --build-arg script=" << scenario.Scenario << " --build-arg imagetag=" << "${JMETER_BASE_VERSION}" << " " <<  scenario.BuildDir
+    sshCommand remote: remote, command: cmd.toString()
+    println "docker build complited"
+    cmd = "docker push " << registry <<"/" << scenario.ServiceName
+    sshCommand remote: remote, command: cmd.toString()
+    println "docker push complited"
+}
+
+def Deploy(remote,scenario){
+    println "Service deploy"
+    cmd = "cd " << scenario.BuildDir << " &&  docker stack deploy  --compose-file " << scenario.ServiceName << ".yml " << scenario.ServiceName
+    sshCommand remote: remote, command: cmd.toString()
+    println "docker stack deploy complited"
+}
+
+def GetRandomPort(master){ 
+    while(true){
+        def port = (int)(Math.random() * ((12000 - 11000) + 1)) + 11000
+        def endpoint = "http://" << master << ":" << port << "/metrics"
+        println endpoint
+        def get = new URL(endpoint.toString()).openConnection()
+        try {
+            get.setRequestMethod("GET");
+            get.connect();
+            println "port is use"
+        }catch(Exception e){
+            println "Exception "+ e 
+            return port
+        }
+    }
+}
+
+def GenerateCompose(scenario){
+    def TPS = (int)(scenario.TPS / scenario.Replicas).round(0)
+    def TARGET = (int)((scenario.TPS * scenario.SLA) / scenario.Replicas).round(0)
+    def STEP = (int)(TPS / scenario.RumpUPSteps)
+    def STEPTIME = scenario.RumpUpTime / scenario.RumpUPSteps + "m"
+    def DURATION = scenario.TestDuration + "m"
+    if (STEP == 0 ){
+        STEP = 1
+    }
+    def TESTNAME =""
+    if ("${SCRIPTS_PATH}" == "/"){
+        TESTNAME ="${Global}"
+    }else{
+        TESTNAME ="${SCRIPTS_PATH}"
+    }
+    def COMMAND = "mvn verify -DrunId=${BUILD_ID} -Dthreads=${TARGET} -DtestName=${TESTNAME} -DexporterPort=${scenario.Port} -Dduration=${scenario.TestDuration} -D \"load_profile=step(1,${TPS},${STEP},${STEPTIME}) const(${TPS},${DURATION})\""
+    println COMMAND
+    registry = getAddr("${REGISTRY_URL}",false)
+    def compose = new StringBuffer()
+    compose << "version: '3.3'\nnetworks:\n    swarm_net:\n        external: true\nservices:\n    jmeter:\n        image: " << registry << "/${scenario.ServiceName}\n"
+    compose << "        ports:\n            - ${scenario.Port}:${scenario.Port}\n        command: '${COMMAND}'\n"
+    compose << "        networks:\n            - swarm_net\n        deploy:\n            replicas: ${scenario.Replicas}\n            resources:\n                limits:\n"
+    compose << "                    cpus: '${scenario.CPU}'\n                    memory: '${scenario.MEM}'\n            placement:\n                constraints: [node.role != manager]\n"
+    compose << "        labels:\n            org.label-schema.group: 'jmeter'"
+    println compose.toString()
+    return compose.toString()
+}
+
+def UnDeploy(remote,scenario){
+    sshCommand remote: remote, command:"docker stack rm ${scenario.ServiceName}"
+    println "Scenario ${scenario.ServiceName} stoped"
+}
+
+def PushRun(startTime,endTime,scenarios){
+    try{
+        def sdf = new SimpleDateFormat("MM/dd/yyyy HH:mm:ss")
+        Date time = sdf.parse(startTime)
+        Timestamp timestamp = new Timestamp(time.getTime())
+        def startTimestamp = timestamp.getTime()
+        time = sdf.parse(endTime)
+        timestamp = new Timestamp(time.getTime())
+        def endTimestamp = timestamp.getTime()
+        def scns=[]
+        scenarios.each { val ->
+            def s = groovy.json.JsonOutput.toJson(
+                name: val.ServiceName, 
+                tps: val.TPS as int, 
+                sla: val.SLA as int,
+                duration:val.TestDuration as int
+            )
+        scns.add(s)
+        }
+        def sc = jsonParse(scns.toString())
+        def data = groovy.json.JsonOutput.toJson(
+            project: "${SCRIPTS_PATH}", 
+            grafanalink: "http://${GRAFANA_HOST}:3000/d/In_The_Bus/test_overview?orgId=1&refresh=10s&from=${startTimestamp}&to=${endTimestamp}", 
+            description: "${TEST_DESCRIPTION}",
+            scenarios:sc
+        )
+        def dt = jsonParse(data)
+        def message = groovy.json.JsonOutput.toJson(id: "${BUILD_NUMBER}" as int , starttime: startTimestamp, endtime: endTimestamp, data:dt)
+        println("Put message")
+        println(message)
+        def endpoint = "http://${AMMUNITION_HOST}:8090/api/v1/runs/new"
+        def httpClient = createAcceptCrt()
+        def httppost = new HttpPost(endpoint)
+        httppost.setEntity(new StringEntity(message.toString()))
+        def response = httpClient.execute(httppost)
+        println response.getProtocolVersion()    
+        println response.getStatusLine().getStatusCode()
+        println response.getStatusLine().getReasonPhrase() 
+        println response.getStatusLine().toString()
+        def entity = response.getEntity()
+        if (entity != null) {
+            def result = EntityUtils.toString(entity)
+            println result
+        }
+        println "Push run code: "+response.getStatusLine().getStatusCode()
+    }catch(Exception e){
+        println "Exception "+ e 
+    }
+}
+
+def GenerateDockerFile(){
+    def registry = getAddr("${REGISTRY_URL}",false)
+    def dockerfile = new StringBuffer()
+        dockerfile << 'ARG imagetag\n'
+        dockerfile << 'FROM ' << registry <<'/jmeter_base:$imagetag\n'
+        dockerfile << 'ENV	JMETER_HOME	/opt/jmeter\n'
+        dockerfile << 'WORKDIR $JMETER_HOME\n'
+        dockerfile << 'ARG script\n'
+        dockerfile << 'COPY $script $JMETER_HOME/src/test/jmeter/\n'
+    return dockerfile.toString()
+}
+
+def GetDockerfile(endpoint){
+    try {
+        def httpclient = createAcceptCrt()
+        def httpget = new HttpGet(endpoint)
+        def response = httpclient.execute(httpget)
+        def entity = response.getEntity()
+        def result = EntityUtils.toString(entity)
+        def json =  jsonParse(result)
+        return json.content.toString()
+    }catch(Exception e){
+        println "Exception "+ e 
+        return "FileNotFound"
+    }
+}
+
+
+def CreateDockerFile(remote,buildDir, text){
+    println text
+    writeFile file: "${WORKSPACE}/${BUILD_ID}/Dockerfile", text: text
+    sshPut remote: remote, from: "${WORKSPACE}/${BUILD_ID}/Dockerfile", into: "${buildDir}/${SCRIPTS_PATH}/Dockerfile"
+}
+
+
+def createAcceptCrt() throws KeyManagementException, NoSuchAlgorithmException, KeyStoreException {
+    SSLContext sslContext = SSLContextBuilder.create().loadTrustMaterial(new TrustSelfSignedStrategy()).build();
+    HostnameVerifier allowAllHosts = new NoopHostnameVerifier();
+    SSLConnectionSocketFactory connectionFactory = new SSLConnectionSocketFactory(sslContext, allowAllHosts);
+    return HttpClients.custom().setSSLSocketFactory(connectionFactory).build();
+}
+
+def jsonParse(def json) {
+    new groovy.json.JsonSlurperClassic().parseText(json)
+}
+def getAddr(uri,schema){
+    def matches = (uri =~ "^((http[s]?):\\/)?\\/?([^:\\/\\s]+)(:([^\\/]*))?")
+    def addr = ""
+    if (schema){
+        addr = matches[0].getAt(2)+"://" + matches[0].getAt(3)
+    }else{
+        addr = matches[0].getAt(3)
+    }
+    if (matches[0].getAt(4).toString() != "null" ){
+        addr = addr + matches[0].getAt(4)
+    }
+    return addr
+}
