@@ -8,12 +8,12 @@
       <parameterDefinitions>
         <hudson.model.StringParameterDefinition>
           <name>REPOSITORY_URL</name>
-          <defaultValue>https://pkles-gt0002967.solution.gt/matscus/jmeter.git</defaultValue>
+          <defaultValue>${GITLAB_REPOSITORY_URL}</defaultValue>
           <trim>false</trim>
         </hudson.model.StringParameterDefinition>
         <hudson.model.StringParameterDefinition>
           <name>REGISTRY_URL</name>
-          <defaultValue>http://172.27.193.132:5000</defaultValue>
+          <defaultValue>${REGISTRY_URL}</defaultValue>
           <trim>false</trim>
         </hudson.model.StringParameterDefinition>
         <org.biouno.unochoice.ChoiceParameter plugin="uno-choice@2.5.6">
@@ -22,7 +22,7 @@
           <visibleItemCount>1</visibleItemCount>
           <script class="org.biouno.unochoice.model.GroovyScript">
             <secureScript plugin="script-security@1.78">
-              <script>def swarmNode=&quot;172.27.193.132&quot;
+              <script>def swarmNode=&quot;${SWARM_MASTER_DEPLOY_NODE}&quot;
 return [swarmNode+&quot;:selected:disabled&quot;]</script>
               <sandbox>false</sandbox>
             </secureScript>
@@ -983,7 +983,7 @@ def PushRun(startTime,endTime,scenarios){
         def sc = jsonParse(scns.toString())
         def data = groovy.json.JsonOutput.toJson(
             project: &quot;${SCRIPTS_PATH}&quot;, 
-            grafanalink: &quot;http://${GRAFANA_HOST}:3000/d/In_The_Bus/test_overview?orgId=1&amp;refresh=10s&amp;from=${startTimestamp}&amp;to=${endTimestamp}&quot;, 
+            grafanalink: &quot;http://${GRAFANA_NODE}:3000/d/In_The_Bus/test_overview?orgId=1&amp;refresh=10s&amp;from=${startTimestamp}&amp;to=${endTimestamp}&quot;, 
             description: &quot;${TEST_DESCRIPTION}&quot;,
             scenarios:sc
         )
@@ -991,7 +991,7 @@ def PushRun(startTime,endTime,scenarios){
         def message = groovy.json.JsonOutput.toJson(id: &quot;${BUILD_NUMBER}&quot; as int , starttime: startTimestamp, endtime: endTimestamp, data:dt)
         println(&quot;Put message&quot;)
         println(message)
-        def endpoint = &quot;http://${AMMUNITION_HOST}:8090/api/v1/runs/new&quot;
+        def endpoint = &quot;http://${AMMUNITION_NODE}:8090/api/v1/runs/new&quot;
         def httpClient = createAcceptCrt()
         def httppost = new HttpPost(endpoint)
         httppost.setEntity(new StringEntity(message.toString()))
