@@ -3,15 +3,19 @@ Preconfigured files of various applications, to make my life easier=)
 
 ### Quick start 
 
-1. Fill in the .env file with the required values.
-2. Run binary files for your OS
+#### Fill in the .env file with the required values.
 
-example
 ```sh
-chmod +x setenv_linux
+#Build from your OS
+make build
 
-bash setenv_linux
+# Configured all app
+make configure
+
+#Configured single app
+env APPLICATION=<set app dir name> make configure
 ```
+
 ### Result: 
 
 a directory result will be created containing all files with set variables from .env
