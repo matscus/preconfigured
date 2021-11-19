@@ -22,7 +22,7 @@
           <visibleItemCount>1</visibleItemCount>
           <script class="org.biouno.unochoice.model.GroovyScript">
             <secureScript plugin="script-security@1.78">
-              <script>def swarmNode=&quot;172.27.193.132&quot;
+              <script>def swarmNode=&quot;${SWARM_MASTER_DEPLOY_NODE}&quot;
 return [swarmNode+&quot;:selected:disabled&quot;]</script>
               <sandbox>false</sandbox>
             </secureScript>
