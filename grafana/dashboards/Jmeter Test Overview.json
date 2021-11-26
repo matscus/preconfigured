@@ -19,11 +19,13 @@
     ]
   },
   "editable": true,
+  "fiscalYearStartMonth": 0,
   "gnetId": null,
   "graphTooltip": 1,
-  "id": 37,
-  "iteration": 1631532382330,
+  "id": 78,
+  "iteration": 1637933894553,
   "links": [],
+  "liveNow": false,
   "panels": [
     {
       "collapsed": true,
@@ -125,7 +127,7 @@
             "h": 7,
             "w": 24,
             "x": 0,
-            "y": 1
+            "y": 7
           },
           "id": 2,
           "interval": "$aggregation",
@@ -384,7 +386,7 @@
             "h": 7,
             "w": 24,
             "x": 0,
-            "y": 8
+            "y": 14
           },
           "id": 6,
           "interval": "$aggregation",
@@ -548,7 +550,7 @@
             "h": 7,
             "w": 24,
             "x": 0,
-            "y": 2
+            "y": 8
           },
           "id": 4,
           "interval": "$aggregation",
@@ -559,8 +561,8 @@
                 "mean",
                 "max"
               ],
-              "displayMode": "table",
-              "placement": "right"
+              "displayMode": "list",
+              "placement": "bottom"
             },
             "tooltip": {
               "mode": "single"
@@ -677,7 +679,7 @@
             "h": 7,
             "w": 24,
             "x": 0,
-            "y": 9
+            "y": 15
           },
           "id": 31,
           "interval": "$aggregation",
@@ -774,13 +776,50 @@
                 ]
               }
             },
-            "overrides": []
+            "overrides": [
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "Value #avg"
+                },
+                "properties": [
+                  {
+                    "id": "displayName",
+                    "value": "Avg"
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "Value #errors"
+                },
+                "properties": [
+                  {
+                    "id": "displayName",
+                    "value": "Errors"
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "Value #Count"
+                },
+                "properties": [
+                  {
+                    "id": "displayName",
+                    "value": "Count"
+                  }
+                ]
+              }
+            ]
           },
           "gridPos": {
             "h": 7,
             "w": 24,
             "x": 0,
-            "y": 16
+            "y": 22
           },
           "id": 22,
           "links": [],
@@ -793,7 +832,7 @@
               }
             ]
           },
-          "pluginVersion": "8.1.2",
+          "pluginVersion": "8.2.3",
           "targets": [
             {
               "exemplar": true,
@@ -845,12 +884,26 @@
             {
               "id": "merge",
               "options": {}
+            },
+            {
+              "id": "filterFieldsByName",
+              "options": {
+                "include": {
+                  "names": [
+                    "requestName",
+                    "runId",
+                    "Value #Count",
+                    "Value #avg",
+                    "Value #errors"
+                  ]
+                }
+              }
             }
           ],
           "type": "table"
         }
       ],
-      "title": "Response time",
+      "title": "Response_time",
       "type": "row"
     },
     {
@@ -910,7 +963,7 @@
             "h": 7,
             "w": 4,
             "x": 0,
-            "y": 3
+            "y": 9
           },
           "id": 12,
           "interval": null,
@@ -929,7 +982,7 @@
             "showThresholdMarkers": true,
             "text": {}
           },
-          "pluginVersion": "8.1.2",
+          "pluginVersion": "8.2.3",
           "targets": [
             {
               "exemplar": true,
@@ -948,99 +1001,135 @@
           "type": "gauge"
         },
         {
-          "columns": [],
           "datasource": null,
-          "fontSize": "100%",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "thresholds"
+              },
+              "custom": {
+                "align": null,
+                "displayMode": "auto"
+              },
+              "decimals": 0,
+              "displayName": "",
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  },
+                  {
+                    "color": "red",
+                    "value": 80
+                  }
+                ]
+              },
+              "unit": "short"
+            },
+            "overrides": [
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "Time"
+                },
+                "properties": [
+                  {
+                    "id": "displayName",
+                    "value": "Time"
+                  },
+                  {
+                    "id": "custom.align",
+                    "value": null
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "Value"
+                },
+                "properties": [
+                  {
+                    "id": "displayName",
+                    "value": "Count"
+                  },
+                  {
+                    "id": "unit",
+                    "value": "short"
+                  },
+                  {
+                    "id": "custom.align",
+                    "value": null
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byRegexp",
+                  "options": "/request.*/"
+                },
+                "properties": [
+                  {
+                    "id": "displayName",
+                    "value": "Transaction"
+                  },
+                  {
+                    "id": "unit",
+                    "value": "short"
+                  },
+                  {
+                    "id": "decimals",
+                    "value": 2
+                  },
+                  {
+                    "id": "custom.align",
+                    "value": null
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "runId"
+                },
+                "properties": [
+                  {
+                    "id": "displayName",
+                    "value": "Run ID"
+                  },
+                  {
+                    "id": "unit",
+                    "value": "short"
+                  },
+                  {
+                    "id": "custom.align",
+                    "value": null
+                  }
+                ]
+              }
+            ]
+          },
           "gridPos": {
             "h": 7,
             "w": 10,
             "x": 4,
-            "y": 3
+            "y": 9
           },
           "id": 14,
           "links": [],
-          "pageSize": null,
-          "scroll": true,
-          "showHeader": true,
-          "sort": {
-            "col": 3,
-            "desc": true
+          "options": {
+            "showHeader": true,
+            "sortBy": [
+              {
+                "desc": false,
+                "displayName": "Transaction"
+              }
+            ]
           },
-          "styles": [
-            {
-              "alias": "Time",
-              "align": "auto",
-              "dateFormat": "YYYY-MM-DD HH:mm:ss",
-              "pattern": "Time",
-              "type": "hidden"
-            },
-            {
-              "alias": "Count",
-              "align": "auto",
-              "colorMode": null,
-              "colors": [
-                "rgba(245, 54, 54, 0.9)",
-                "rgba(237, 129, 40, 0.89)",
-                "rgba(50, 172, 45, 0.97)"
-              ],
-              "dateFormat": "YYYY-MM-DD HH:mm:ss",
-              "decimals": null,
-              "mappingType": 1,
-              "pattern": "Value",
-              "thresholds": [],
-              "type": "string",
-              "unit": "short"
-            },
-            {
-              "alias": "Transaction",
-              "align": "auto",
-              "colorMode": null,
-              "colors": [
-                "rgba(245, 54, 54, 0.9)",
-                "rgba(237, 129, 40, 0.89)",
-                "rgba(50, 172, 45, 0.97)"
-              ],
-              "dateFormat": "YYYY-MM-DD HH:mm:ss",
-              "decimals": 2,
-              "mappingType": 1,
-              "pattern": "/request.*/",
-              "thresholds": [],
-              "type": "string",
-              "unit": "short"
-            },
-            {
-              "alias": "Run ID",
-              "align": "auto",
-              "colorMode": null,
-              "colors": [
-                "rgba(245, 54, 54, 0.9)",
-                "rgba(237, 129, 40, 0.89)",
-                "rgba(50, 172, 45, 0.97)"
-              ],
-              "dateFormat": "YYYY-MM-DD HH:mm:ss",
-              "decimals": 0,
-              "mappingType": 1,
-              "pattern": "runId",
-              "thresholds": [],
-              "type": "number",
-              "unit": "short"
-            },
-            {
-              "alias": "",
-              "align": "auto",
-              "colorMode": null,
-              "colors": [
-                "rgba(245, 54, 54, 0.9)",
-                "rgba(237, 129, 40, 0.89)",
-                "rgba(50, 172, 45, 0.97)"
-              ],
-              "decimals": 2,
-              "pattern": "/.*/",
-              "thresholds": [],
-              "type": "number",
-              "unit": "short"
-            }
-          ],
+          "pluginVersion": "8.2.3",
           "targets": [
             {
               "exemplar": true,
@@ -1054,121 +1143,186 @@
             }
           ],
           "title": "Errors per Transaction",
-          "transform": "table",
-          "type": "table-old"
+          "transformations": [
+            {
+              "id": "merge",
+              "options": {
+                "reducers": []
+              }
+            },
+            {
+              "id": "filterFieldsByName",
+              "options": {
+                "include": {
+                  "names": [
+                    "requestName",
+                    "runId",
+                    "Value"
+                  ]
+                }
+              }
+            }
+          ],
+          "type": "table"
         },
         {
-          "columns": [],
           "datasource": null,
-          "fontSize": "100%",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "thresholds"
+              },
+              "custom": {
+                "align": null,
+                "displayMode": "auto"
+              },
+              "decimals": 0,
+              "displayName": "",
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  },
+                  {
+                    "color": "red",
+                    "value": 80
+                  }
+                ]
+              },
+              "unit": "short"
+            },
+            "overrides": [
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "Time"
+                },
+                "properties": [
+                  {
+                    "id": "displayName",
+                    "value": "Time"
+                  },
+                  {
+                    "id": "custom.align",
+                    "value": null
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "responseCode"
+                },
+                "properties": [
+                  {
+                    "id": "displayName",
+                    "value": "Response Code"
+                  },
+                  {
+                    "id": "unit",
+                    "value": "short"
+                  },
+                  {
+                    "id": "decimals",
+                    "value": 0
+                  },
+                  {
+                    "id": "custom.align",
+                    "value": null
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "responseMessage"
+                },
+                "properties": [
+                  {
+                    "id": "displayName",
+                    "value": "Response Message"
+                  },
+                  {
+                    "id": "unit",
+                    "value": "short"
+                  },
+                  {
+                    "id": "decimals",
+                    "value": 2
+                  },
+                  {
+                    "id": "custom.align",
+                    "value": null
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "Value"
+                },
+                "properties": [
+                  {
+                    "id": "displayName",
+                    "value": "Count"
+                  },
+                  {
+                    "id": "unit",
+                    "value": "short"
+                  },
+                  {
+                    "id": "decimals",
+                    "value": 0
+                  },
+                  {
+                    "id": "custom.align",
+                    "value": null
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "runId"
+                },
+                "properties": [
+                  {
+                    "id": "displayName",
+                    "value": "Run ID"
+                  },
+                  {
+                    "id": "unit",
+                    "value": "none"
+                  },
+                  {
+                    "id": "custom.align",
+                    "value": null
+                  }
+                ]
+              }
+            ]
+          },
           "gridPos": {
             "h": 7,
             "w": 10,
             "x": 14,
-            "y": 3
+            "y": 9
           },
           "id": 16,
           "links": [],
-          "pageSize": null,
-          "scroll": true,
-          "showHeader": true,
-          "sort": {
-            "col": 4,
-            "desc": true
+          "options": {
+            "showHeader": true,
+            "sortBy": [
+              {
+                "desc": true,
+                "displayName": "Count"
+              }
+            ]
           },
-          "styles": [
-            {
-              "alias": "Time",
-              "align": "auto",
-              "dateFormat": "YYYY-MM-DD HH:mm:ss",
-              "pattern": "Time",
-              "type": "hidden"
-            },
-            {
-              "alias": "Response Code",
-              "align": "auto",
-              "colorMode": null,
-              "colors": [
-                "rgba(245, 54, 54, 0.9)",
-                "rgba(237, 129, 40, 0.89)",
-                "rgba(50, 172, 45, 0.97)"
-              ],
-              "dateFormat": "YYYY-MM-DD HH:mm:ss",
-              "decimals": 2,
-              "mappingType": 1,
-              "pattern": "responseCode",
-              "thresholds": [],
-              "type": "string",
-              "unit": "short"
-            },
-            {
-              "alias": "Response Message",
-              "align": "auto",
-              "colorMode": null,
-              "colors": [
-                "rgba(245, 54, 54, 0.9)",
-                "rgba(237, 129, 40, 0.89)",
-                "rgba(50, 172, 45, 0.97)"
-              ],
-              "dateFormat": "YYYY-MM-DD HH:mm:ss",
-              "decimals": 2,
-              "mappingType": 1,
-              "pattern": "responseMessage",
-              "thresholds": [],
-              "type": "string",
-              "unit": "short"
-            },
-            {
-              "alias": "Count",
-              "align": "auto",
-              "colorMode": null,
-              "colors": [
-                "rgba(245, 54, 54, 0.9)",
-                "rgba(237, 129, 40, 0.89)",
-                "rgba(50, 172, 45, 0.97)"
-              ],
-              "dateFormat": "YYYY-MM-DD HH:mm:ss",
-              "decimals": 2,
-              "mappingType": 1,
-              "pattern": "Value",
-              "thresholds": [],
-              "type": "string",
-              "unit": "short"
-            },
-            {
-              "alias": "Run ID",
-              "align": "auto",
-              "colorMode": null,
-              "colors": [
-                "rgba(245, 54, 54, 0.9)",
-                "rgba(237, 129, 40, 0.89)",
-                "rgba(50, 172, 45, 0.97)"
-              ],
-              "dateFormat": "YYYY-MM-DD HH:mm:ss",
-              "decimals": 0,
-              "link": false,
-              "mappingType": 1,
-              "pattern": "runId",
-              "thresholds": [],
-              "type": "number",
-              "unit": "none"
-            },
-            {
-              "alias": "",
-              "align": "auto",
-              "colorMode": null,
-              "colors": [
-                "rgba(245, 54, 54, 0.9)",
-                "rgba(237, 129, 40, 0.89)",
-                "rgba(50, 172, 45, 0.97)"
-              ],
-              "decimals": 2,
-              "pattern": "/.*/",
-              "thresholds": [],
-              "type": "number",
-              "unit": "short"
-            }
-          ],
+          "pluginVersion": "8.2.3",
           "targets": [
             {
               "exemplar": true,
@@ -1182,8 +1336,28 @@
             }
           ],
           "title": "Error Info",
-          "transform": "table",
-          "type": "table-old"
+          "transformations": [
+            {
+              "id": "merge",
+              "options": {
+                "reducers": []
+              }
+            },
+            {
+              "id": "filterFieldsByName",
+              "options": {
+                "include": {
+                  "names": [
+                    "responseCode",
+                    "responseMessage",
+                    "runId",
+                    "Value"
+                  ]
+                }
+              }
+            }
+          ],
+          "type": "table"
         },
         {
           "datasource": null,
@@ -1261,7 +1435,7 @@
             "h": 7,
             "w": 24,
             "x": 0,
-            "y": 10
+            "y": 16
           },
           "id": 8,
           "interval": "$aggregation",
@@ -1368,7 +1542,7 @@
             "h": 7,
             "w": 24,
             "x": 0,
-            "y": 17
+            "y": 23
           },
           "id": 28,
           "interval": "$aggregation",
@@ -1508,7 +1682,7 @@
             "h": 7,
             "w": 12,
             "x": 0,
-            "y": 4
+            "y": 10
           },
           "id": 19,
           "interval": "$aggregation",
@@ -1524,10 +1698,11 @@
             }
           },
           "pluginVersion": "8.0.6",
+          "repeat": null,
           "targets": [
             {
               "exemplar": true,
-              "expr": "sum by (requestStatus) (rate(jmeter_requests{requestName=\"$transaction\", testName=\"$project\", runId = \"$RunID\"}[$__interval]))",
+              "expr": "sum by (requestStatus) (rate(jmeter_requests{requestName=~'$transaction', testName=\"$project\", runId = \"$RunID\"}[$__interval]))",
               "format": "time_series",
               "hide": false,
               "interval": "",
@@ -1631,7 +1806,7 @@
             "h": 7,
             "w": 12,
             "x": 12,
-            "y": 4
+            "y": 10
           },
           "id": 20,
           "interval": "$aggregation",
@@ -1650,7 +1825,7 @@
           "targets": [
             {
               "exemplar": true,
-              "expr": "sum(rate(jmeter_response_time_sum{requestName=\"$transaction\", testName=\"$project\", runId = \"$RunID\"}[$__interval]))\n/ sum(rate(jmeter_response_time_count{requestName=\"$transaction\", testName=\"$project\", runId = \"$RunID\"}[$__interval]))",
+              "expr": "sum(rate(jmeter_response_time_sum{requestName=~'$transaction', testName=\"$project\", runId = \"$RunID\"}[$__interval]))\n/ sum(rate(jmeter_response_time_count{requestName=~'$transaction', testName=\"$project\", runId = \"$RunID\"}[$__interval]))",
               "format": "time_series",
               "hide": false,
               "interval": "",
@@ -1660,7 +1835,7 @@
             },
             {
               "exemplar": true,
-              "expr": "avg(jmeter_response_time{requestName=~\".+XX.+\", quantile=\"0.90\", testName=\"$project\", runId = \"$RunID\"} >= 0)",
+              "expr": "avg(jmeter_response_time{requestName=~'$transaction', quantile=\"0.90\", testName=\"$project\", runId = \"$RunID\"} >= 0)",
               "format": "time_series",
               "interval": "",
               "intervalFactor": 1,
@@ -1734,7 +1909,7 @@
             "h": 7,
             "w": 24,
             "x": 0,
-            "y": 11
+            "y": 17
           },
           "id": 29,
           "interval": "$aggregation",
@@ -1752,7 +1927,7 @@
           "targets": [
             {
               "exemplar": true,
-              "expr": "sum by (requestName, responseCode) (jmeter_requests{requestName=\"$transaction\", testName=\"$project\", requestStatus=\"FAIL\", runId = \"$RunID\"})",
+              "expr": "sum by (requestName, responseCode) (jmeter_requests{requestName=~'$transaction', testName=\"$project\", requestStatus=\"FAIL\", runId = \"$RunID\"})",
               "format": "time_series",
               "interval": "",
               "intervalFactor": 1,
@@ -1766,176 +1941,262 @@
           "type": "timeseries"
         },
         {
-          "columns": [],
           "datasource": null,
-          "fontSize": "100%",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "thresholds"
+              },
+              "custom": {
+                "align": "auto",
+                "displayMode": "auto"
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  },
+                  {
+                    "color": "red",
+                    "value": 80
+                  }
+                ]
+              }
+            },
+            "overrides": [
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "Time"
+                },
+                "properties": [
+                  {
+                    "id": "displayName",
+                    "value": "Time"
+                  },
+                  {
+                    "id": "custom.align",
+                    "value": null
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "requestName"
+                },
+                "properties": [
+                  {
+                    "id": "displayName",
+                    "value": "Request Name"
+                  },
+                  {
+                    "id": "unit",
+                    "value": "short"
+                  },
+                  {
+                    "id": "decimals",
+                    "value": 2
+                  },
+                  {
+                    "id": "custom.align",
+                    "value": null
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "responseCode"
+                },
+                "properties": [
+                  {
+                    "id": "displayName",
+                    "value": "Response Code"
+                  },
+                  {
+                    "id": "unit",
+                    "value": "short"
+                  },
+                  {
+                    "id": "decimals",
+                    "value": 2
+                  },
+                  {
+                    "id": "custom.align",
+                    "value": null
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "responseMessage"
+                },
+                "properties": [
+                  {
+                    "id": "displayName",
+                    "value": "Response Message"
+                  },
+                  {
+                    "id": "unit",
+                    "value": "short"
+                  },
+                  {
+                    "id": "custom.align",
+                    "value": null
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "runId"
+                },
+                "properties": [
+                  {
+                    "id": "displayName",
+                    "value": "Run ID"
+                  },
+                  {
+                    "id": "unit",
+                    "value": "short"
+                  },
+                  {
+                    "id": "custom.align",
+                    "value": null
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "Value #A"
+                },
+                "properties": [
+                  {
+                    "id": "displayName",
+                    "value": "Count"
+                  },
+                  {
+                    "id": "unit",
+                    "value": "locale"
+                  },
+                  {
+                    "id": "custom.align",
+                    "value": null
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "Value #B"
+                },
+                "properties": [
+                  {
+                    "id": "displayName",
+                    "value": "90 pct"
+                  },
+                  {
+                    "id": "unit",
+                    "value": "short"
+                  },
+                  {
+                    "id": "decimals",
+                    "value": 2
+                  },
+                  {
+                    "id": "custom.align",
+                    "value": null
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "Value #D"
+                },
+                "properties": [
+                  {
+                    "id": "displayName",
+                    "value": "Avg"
+                  },
+                  {
+                    "id": "unit",
+                    "value": "ms"
+                  },
+                  {
+                    "id": "decimals",
+                    "value": 2
+                  },
+                  {
+                    "id": "custom.align",
+                    "value": null
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "requestStatus"
+                },
+                "properties": [
+                  {
+                    "id": "displayName",
+                    "value": "Status"
+                  },
+                  {
+                    "id": "unit",
+                    "value": "short"
+                  },
+                  {
+                    "id": "decimals",
+                    "value": 2
+                  },
+                  {
+                    "id": "custom.align",
+                    "value": null
+                  },
+                  {
+                    "id": "thresholds",
+                    "value": {
+                      "mode": "absolute",
+                      "steps": [
+                        {
+                          "color": "rgba(245, 54, 54, 0.9)",
+                          "value": null
+                        },
+                        {
+                          "color": "rgba(237, 129, 40, 0.89)",
+                          "value": null
+                        }
+                      ]
+                    }
+                  }
+                ]
+              }
+            ]
+          },
           "gridPos": {
             "h": 7,
             "w": 24,
             "x": 0,
-            "y": 18
+            "y": 24
           },
           "id": 24,
           "links": [],
-          "pageSize": null,
-          "scroll": true,
-          "showHeader": true,
-          "sort": {
-            "col": 1,
-            "desc": true
+          "options": {
+            "showHeader": true
           },
-          "styles": [
-            {
-              "alias": "Time",
-              "align": "auto",
-              "dateFormat": "YYYY-MM-DD HH:mm:ss",
-              "pattern": "Time",
-              "type": "hidden"
-            },
-            {
-              "alias": "Request Name",
-              "align": "auto",
-              "colorMode": null,
-              "colors": [
-                "rgba(245, 54, 54, 0.9)",
-                "rgba(237, 129, 40, 0.89)",
-                "rgba(50, 172, 45, 0.97)"
-              ],
-              "dateFormat": "YYYY-MM-DD HH:mm:ss",
-              "decimals": 2,
-              "mappingType": 1,
-              "pattern": "requestName",
-              "thresholds": [],
-              "type": "string",
-              "unit": "short"
-            },
-            {
-              "alias": "Response Code",
-              "align": "auto",
-              "colorMode": null,
-              "colors": [
-                "rgba(245, 54, 54, 0.9)",
-                "rgba(237, 129, 40, 0.89)",
-                "rgba(50, 172, 45, 0.97)"
-              ],
-              "dateFormat": "YYYY-MM-DD HH:mm:ss",
-              "decimals": 2,
-              "mappingType": 1,
-              "pattern": "responseCode",
-              "thresholds": [],
-              "type": "string",
-              "unit": "short"
-            },
-            {
-              "alias": "Response Message",
-              "align": "auto",
-              "colorMode": null,
-              "colors": [
-                "rgba(245, 54, 54, 0.9)",
-                "rgba(237, 129, 40, 0.89)",
-                "rgba(50, 172, 45, 0.97)"
-              ],
-              "dateFormat": "YYYY-MM-DD HH:mm:ss",
-              "decimals": 0,
-              "mappingType": 1,
-              "pattern": "responseMessage",
-              "thresholds": [],
-              "type": "string",
-              "unit": "short"
-            },
-            {
-              "alias": "Run ID",
-              "align": "auto",
-              "colorMode": null,
-              "colors": [
-                "rgba(245, 54, 54, 0.9)",
-                "rgba(237, 129, 40, 0.89)",
-                "rgba(50, 172, 45, 0.97)"
-              ],
-              "dateFormat": "YYYY-MM-DD HH:mm:ss",
-              "decimals": 0,
-              "mappingType": 1,
-              "pattern": "runId",
-              "thresholds": [],
-              "type": "number",
-              "unit": "short"
-            },
-            {
-              "alias": "Count",
-              "align": "auto",
-              "colorMode": null,
-              "colors": [
-                "rgba(245, 54, 54, 0.9)",
-                "rgba(237, 129, 40, 0.89)",
-                "rgba(50, 172, 45, 0.97)"
-              ],
-              "dateFormat": "YYYY-MM-DD HH:mm:ss",
-              "decimals": 0,
-              "mappingType": 1,
-              "pattern": "Value #A",
-              "thresholds": [],
-              "type": "number",
-              "unit": "locale"
-            },
-            {
-              "alias": "90 pct",
-              "align": "auto",
-              "colorMode": null,
-              "colors": [
-                "rgba(245, 54, 54, 0.9)",
-                "rgba(237, 129, 40, 0.89)",
-                "rgba(50, 172, 45, 0.97)"
-              ],
-              "dateFormat": "YYYY-MM-DD HH:mm:ss",
-              "decimals": 2,
-              "mappingType": 1,
-              "pattern": "Value #B",
-              "thresholds": [],
-              "type": "number",
-              "unit": "short"
-            },
-            {
-              "alias": "Avg",
-              "align": "auto",
-              "colorMode": null,
-              "colors": [
-                "rgba(245, 54, 54, 0.9)",
-                "rgba(237, 129, 40, 0.89)",
-                "rgba(50, 172, 45, 0.97)"
-              ],
-              "dateFormat": "YYYY-MM-DD HH:mm:ss",
-              "decimals": 2,
-              "mappingType": 1,
-              "pattern": "Value #D",
-              "thresholds": [],
-              "type": "number",
-              "unit": "ms"
-            },
-            {
-              "alias": "Status",
-              "align": "auto",
-              "colorMode": null,
-              "colors": [
-                "rgba(245, 54, 54, 0.9)",
-                "rgba(237, 129, 40, 0.89)",
-                "rgba(50, 172, 45, 0.97)"
-              ],
-              "decimals": 2,
-              "link": false,
-              "pattern": "requestStatus",
-              "preserveFormat": false,
-              "sanitize": false,
-              "thresholds": [
-                ""
-              ],
-              "type": "string",
-              "unit": "short"
-            }
-          ],
+          "pluginVersion": "8.2.3",
           "targets": [
             {
               "exemplar": true,
-              "expr": "avg(\n  avg_over_time(jmeter_response_time{requestName=\"$transaction\", quantile=\"0.9\", testName=\"$project\", runId = \"$RunID\"}[${__range_s}s])\n) by (runId, requestName, responseCode, responseMessage)",
+              "expr": "avg(\n  avg_over_time(jmeter_response_time{requestName=~'$transaction', quantile=\"0.9\", testName=\"$project\", runId = \"$RunID\"}[${__range_s}s])\n) by (runId, requestName, responseCode, responseMessage)",
               "format": "table",
               "hide": true,
               "instant": true,
@@ -1945,7 +2206,7 @@
             },
             {
               "exemplar": true,
-              "expr": "sum(\n  max_over_time(jmeter_requests{requestName=\"$transaction\",  testName=\"$project\", runId = \"$RunID\"}[${__range_s}s])\n  - min_over_time(jmeter_requests{requestName=\"$transaction\",  testName=\"$project\", runId = \"$RunID\"}[${__range_s}s])\n) by (runId, requestName, responseCode, responseMessage, requestStatus)",
+              "expr": "sum(\n  max_over_time(jmeter_requests{requestName=~'$transaction',  testName=\"$project\", runId = \"$RunID\"}[${__range_s}s])\n  - min_over_time(jmeter_requests{requestName=~'$transaction',  testName=\"$project\", runId = \"$RunID\"}[${__range_s}s])\n) by (runId, requestName, responseCode, responseMessage, requestStatus)",
               "format": "table",
               "hide": false,
               "instant": true,
@@ -1956,7 +2217,7 @@
             },
             {
               "exemplar": true,
-              "expr": "(avg(\n  max_over_time(jmeter_response_time_sum{requestName=\"$transaction\",  testName=\"$project\", runId = \"$RunID\"}[${__range_s}s]) \n  - min_over_time(jmeter_response_time_sum{requestName=\"$transaction\",  testName=\"$project\", runId = \"$RunID\"}[${__range_s}s])\n) by (runId, requestName, responseCode, responseMessage, requestStatus))\n/\n(avg(\n  max_over_time(jmeter_response_time_count{requestName=\"$transaction\",  testName=\"$project\", runId = \"$RunID\"}[${__range_s}s]) \n  - min_over_time(jmeter_response_time_count{requestName=\"$transaction\",  testName=\"$project\", runId = \"$RunID\"}[${__range_s}s])\n) by (runId, requestName, responseCode, responseMessage, requestStatus))",
+              "expr": "(avg(\n  max_over_time(jmeter_response_time_sum{requestName=~'$transaction',  testName=\"$project\", runId = \"$RunID\"}[${__range_s}s]) \n  - min_over_time(jmeter_response_time_sum{requestName=~'$transaction',  testName=\"$project\", runId = \"$RunID\"}[${__range_s}s])\n) by (runId, requestName, responseCode, responseMessage, requestStatus))\n/\n(avg(\n  max_over_time(jmeter_response_time_count{requestName=~'$transaction',  testName=\"$project\", runId = \"$RunID\"}[${__range_s}s]) \n  - min_over_time(jmeter_response_time_count{requestName=~'$transaction',  testName=\"$project\", runId = \"$RunID\"}[${__range_s}s])\n) by (runId, requestName, responseCode, responseMessage, requestStatus))",
               "format": "table",
               "hide": false,
               "instant": true,
@@ -1966,146 +2227,228 @@
             }
           ],
           "title": "Transaction Info",
-          "transform": "table",
-          "type": "table-old"
+          "transformations": [
+            {
+              "id": "merge",
+              "options": {
+                "reducers": []
+              }
+            },
+            {
+              "id": "filterFieldsByName",
+              "options": {
+                "include": {
+                  "names": [
+                    "requestName",
+                    "requestStatus",
+                    "responseCode",
+                    "runId",
+                    "Value #A",
+                    "Value #D",
+                    "responseMessage"
+                  ]
+                }
+              }
+            }
+          ],
+          "type": "table"
         },
         {
-          "columns": [],
           "datasource": null,
-          "fontSize": "100%",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "thresholds"
+              },
+              "custom": {
+                "align": null,
+                "displayMode": "auto"
+              },
+              "decimals": 2,
+              "displayName": "",
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  },
+                  {
+                    "color": "red",
+                    "value": 80
+                  }
+                ]
+              },
+              "unit": "short"
+            },
+            "overrides": [
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "Time"
+                },
+                "properties": [
+                  {
+                    "id": "displayName",
+                    "value": "Time"
+                  },
+                  {
+                    "id": "custom.align",
+                    "value": null
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "Value #A"
+                },
+                "properties": [
+                  {
+                    "id": "displayName",
+                    "value": "Count"
+                  },
+                  {
+                    "id": "unit",
+                    "value": "locale"
+                  },
+                  {
+                    "id": "custom.align",
+                    "value": null
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "Value #B"
+                },
+                "properties": [
+                  {
+                    "id": "displayName",
+                    "value": "Avg"
+                  },
+                  {
+                    "id": "unit",
+                    "value": "ms"
+                  },
+                  {
+                    "id": "decimals",
+                    "value": 2
+                  },
+                  {
+                    "id": "custom.align",
+                    "value": null
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "Value #D"
+                },
+                "properties": [
+                  {
+                    "id": "displayName",
+                    "value": "Errors"
+                  },
+                  {
+                    "id": "unit",
+                    "value": "percentunit"
+                  },
+                  {
+                    "id": "decimals",
+                    "value": 1
+                  },
+                  {
+                    "id": "custom.displayMode",
+                    "value": "color-background"
+                  },
+                  {
+                    "id": "custom.align",
+                    "value": null
+                  },
+                  {
+                    "id": "thresholds",
+                    "value": {
+                      "mode": "absolute",
+                      "steps": [
+                        {
+                          "color": "rgba(50, 172, 45, 0.97)",
+                          "value": null
+                        },
+                        {
+                          "color": "#bf1b00",
+                          "value": 0
+                        }
+                      ]
+                    }
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "requestName"
+                },
+                "properties": [
+                  {
+                    "id": "displayName",
+                    "value": "Request Name"
+                  },
+                  {
+                    "id": "unit",
+                    "value": "short"
+                  },
+                  {
+                    "id": "decimals",
+                    "value": 2
+                  },
+                  {
+                    "id": "custom.align",
+                    "value": null
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "runId"
+                },
+                "properties": [
+                  {
+                    "id": "displayName",
+                    "value": "Run ID"
+                  },
+                  {
+                    "id": "unit",
+                    "value": "none"
+                  },
+                  {
+                    "id": "custom.align",
+                    "value": null
+                  }
+                ]
+              }
+            ]
+          },
           "gridPos": {
             "h": 7,
             "w": 24,
             "x": 0,
-            "y": 25
+            "y": 31
           },
           "id": 30,
           "links": [],
-          "pageSize": null,
-          "scroll": true,
-          "showHeader": true,
-          "sort": {
-            "col": 1,
-            "desc": false
+          "options": {
+            "showHeader": true
           },
-          "styles": [
-            {
-              "alias": "Time",
-              "align": "auto",
-              "dateFormat": "YYYY-MM-DD HH:mm:ss",
-              "pattern": "Time",
-              "type": "hidden"
-            },
-            {
-              "alias": "Count",
-              "align": "auto",
-              "colorMode": null,
-              "colors": [
-                "rgba(245, 54, 54, 0.9)",
-                "rgba(237, 129, 40, 0.89)",
-                "rgba(50, 172, 45, 0.97)"
-              ],
-              "dateFormat": "YYYY-MM-DD HH:mm:ss",
-              "decimals": 0,
-              "mappingType": 1,
-              "pattern": "Value #A",
-              "thresholds": [],
-              "type": "number",
-              "unit": "locale"
-            },
-            {
-              "alias": "Avg",
-              "align": "auto",
-              "colorMode": null,
-              "colors": [
-                "rgba(245, 54, 54, 0.9)",
-                "rgba(237, 129, 40, 0.89)",
-                "rgba(50, 172, 45, 0.97)"
-              ],
-              "dateFormat": "YYYY-MM-DD HH:mm:ss",
-              "decimals": 2,
-              "link": false,
-              "mappingType": 1,
-              "pattern": "Value #B",
-              "thresholds": [],
-              "type": "number",
-              "unit": "ms"
-            },
-            {
-              "alias": "Errors",
-              "align": "auto",
-              "colorMode": "cell",
-              "colors": [
-                "rgba(50, 172, 45, 0.97)",
-                "#bf1b00",
-                "#bf1b00"
-              ],
-              "dateFormat": "YYYY-MM-DD HH:mm:ss",
-              "decimals": 1,
-              "mappingType": 1,
-              "pattern": "Value #D",
-              "thresholds": [
-                "0.01"
-              ],
-              "type": "number",
-              "unit": "percentunit"
-            },
-            {
-              "alias": "Request Name",
-              "align": "auto",
-              "colorMode": null,
-              "colors": [
-                "rgba(245, 54, 54, 0.9)",
-                "rgba(237, 129, 40, 0.89)",
-                "rgba(50, 172, 45, 0.97)"
-              ],
-              "dateFormat": "YYYY-MM-DD HH:mm:ss",
-              "decimals": 2,
-              "mappingType": 1,
-              "pattern": "requestName",
-              "preserveFormat": false,
-              "sanitize": false,
-              "thresholds": [],
-              "type": "string",
-              "unit": "short"
-            },
-            {
-              "alias": "Run ID",
-              "align": "auto",
-              "colorMode": null,
-              "colors": [
-                "rgba(245, 54, 54, 0.9)",
-                "rgba(237, 129, 40, 0.89)",
-                "rgba(50, 172, 45, 0.97)"
-              ],
-              "dateFormat": "YYYY-MM-DD HH:mm:ss",
-              "decimals": 0,
-              "mappingType": 1,
-              "pattern": "runId",
-              "thresholds": [],
-              "type": "number",
-              "unit": "none"
-            },
-            {
-              "alias": "",
-              "align": "auto",
-              "colorMode": null,
-              "colors": [
-                "rgba(245, 54, 54, 0.9)",
-                "rgba(237, 129, 40, 0.89)",
-                "rgba(50, 172, 45, 0.97)"
-              ],
-              "decimals": 2,
-              "pattern": "/.*/",
-              "thresholds": [],
-              "type": "number",
-              "unit": "short"
-            }
-          ],
+          "pluginVersion": "8.2.3",
           "targets": [
             {
               "exemplar": true,
-              "expr": "sum(\n  max_over_time(jmeter_requests{requestName=\"$transaction\",  testName=\"$project\", runId = \"$RunID\"}[${__range_s}s])\n  - min_over_time(jmeter_requests{requestName=\"$transaction\", testName=\"$project\", runId = \"$RunID\"}[${__range_s}s])\n) by (runId, requestName)",
+              "expr": "sum(\n  max_over_time(jmeter_requests{requestName=~'$transaction',  testName=\"$project\", runId = \"$RunID\"}[${__range_s}s])\n  - min_over_time(jmeter_requests{requestName=~'$transaction', testName=\"$project\", runId = \"$RunID\"}[${__range_s}s])\n) by (runId, requestName)",
               "format": "table",
               "hide": false,
               "instant": true,
@@ -2116,7 +2459,7 @@
             },
             {
               "exemplar": true,
-              "expr": "(avg(\n  max_over_time(jmeter_response_time_sum{requestName=\"$transaction\",  testName=\"$project\", runId = \"$RunID\"}[${__range_s}s])  \n  - min_over_time(jmeter_response_time_sum{requestName=\"$transaction\",   testName=\"$project\", runId = \"$RunID\"}[${__range_s}s])\n) by (runId, requestName))\n/(avg(\n  max_over_time(jmeter_response_time_count{requestName=\"$transaction\",  testName=\"$project\", runId = \"$RunID\"}[${__range_s}s])     \n  - min_over_time(jmeter_response_time_count{requestName=\"$transaction\",  testName=\"$project\", runId = \"$RunID\"}[${__range_s}s])\n) by (runId, requestName))",
+              "expr": "(avg(\n  max_over_time(jmeter_response_time_sum{requestName=~'$transaction',  testName=\"$project\", runId = \"$RunID\"}[${__range_s}s])  \n  - min_over_time(jmeter_response_time_sum{requestName=~'$transaction',   testName=\"$project\", runId = \"$RunID\"}[${__range_s}s])\n) by (runId, requestName))\n/(avg(\n  max_over_time(jmeter_response_time_count{requestName=~'$transaction',  testName=\"$project\", runId = \"$RunID\"}[${__range_s}s])     \n  - min_over_time(jmeter_response_time_count{requestName=~'$transaction',  testName=\"$project\", runId = \"$RunID\"}[${__range_s}s])\n) by (runId, requestName))",
               "format": "table",
               "hide": false,
               "instant": true,
@@ -2127,7 +2470,7 @@
             },
             {
               "exemplar": true,
-              "expr": "sum(\n  max_over_time(jmeter_requests{requestName=\"$transaction\",  requestStatus=\"FAIL\", testName=\"$project\", runId = \"$RunID\"}[${__range_s}s])\n  - min_over_time(jmeter_requests{requestName=\"$transaction\",  requestStatus=\"FAIL\", testName=\"$project\", runId = \"$RunID\"}[${__range_s}s])\n) by (runId, requestName)\n/ sum(\n  max_over_time(jmeter_requests{requestName=\"$transaction\",  testName=\"$project\", runId = \"$RunID\"}[${__range_s}s])\n  - min_over_time(jmeter_requests{requestName=\"$transaction\",  testName=\"$project\", runId = \"$RunID\"}[${__range_s}s])\n) by (runId, requestName)",
+              "expr": "sum(\n  max_over_time(jmeter_requests{requestName=~'$transaction',  requestStatus=\"FAIL\", testName=\"$project\", runId = \"$RunID\"}[${__range_s}s])\n  - min_over_time(jmeter_requests{requestName=~'$transaction',  requestStatus=\"FAIL\", testName=\"$project\", runId = \"$RunID\"}[${__range_s}s])\n) by (runId, requestName)\n/ sum(\n  max_over_time(jmeter_requests{requestName=~'$transaction',  testName=\"$project\", runId = \"$RunID\"}[${__range_s}s])\n  - min_over_time(jmeter_requests{requestName=~'$transaction',  testName=\"$project\", runId = \"$RunID\"}[${__range_s}s])\n) by (runId, requestName)",
               "format": "table",
               "hide": false,
               "instant": true,
@@ -2138,8 +2481,29 @@
             }
           ],
           "title": "Aggregate Report",
-          "transform": "table",
-          "type": "table-old"
+          "transformations": [
+            {
+              "id": "merge",
+              "options": {
+                "reducers": []
+              }
+            },
+            {
+              "id": "filterFieldsByName",
+              "options": {
+                "include": {
+                  "names": [
+                    "requestName",
+                    "runId",
+                    "Value #A",
+                    "Value #B",
+                    "Value #D"
+                  ]
+                }
+              }
+            }
+          ],
+          "type": "table"
         },
         {
           "datasource": null,
@@ -2216,7 +2580,7 @@
             "h": 7,
             "w": 24,
             "x": 0,
-            "y": 32
+            "y": 38
           },
           "id": 26,
           "interval": "$aggregation",
@@ -2236,7 +2600,7 @@
           "targets": [
             {
               "exemplar": true,
-              "expr": "sum by (requestName) (rate(jmeter_response_time_sum{requestName=\"$transaction\", testName=\"$project\", runId = \"$RunID\"}[$__interval]))\n/ sum by (requestName) (rate(jmeter_response_time_count{requestName=\"$transaction\", testName=\"$project\", runId = \"$RunID\"}[$__interval]))",
+              "expr": "sum by (requestName) (rate(jmeter_response_time_sum{requestName=~'$transaction', testName=\"$project\", runId = \"$RunID\"}[$__interval]))\n/ sum by (requestName) (rate(jmeter_response_time_count{requestName=~'$transaction', testName=\"$project\", runId = \"$RunID\"}[$__interval]))",
               "hide": false,
               "interval": "",
               "legendFormat": "{{requestName}}",
@@ -2268,7 +2632,7 @@
             "h": 7,
             "w": 24,
             "x": 0,
-            "y": 39
+            "y": 45
           },
           "hiddenSeries": false,
           "id": 27,
@@ -2292,7 +2656,7 @@
             "alertThreshold": true
           },
           "percentage": false,
-          "pluginVersion": "8.1.2",
+          "pluginVersion": "8.2.3",
           "pointradius": 2,
           "points": false,
           "renderer": "flot",
@@ -2303,7 +2667,7 @@
           "targets": [
             {
               "exemplar": true,
-              "expr": "sum by (requestName) (rate(jmeter_response_time_sum{requestName=\"$transaction\",  testName=\"$project\", runId = \"$RunID\"}[$__interval]))\n/ sum by (requestName) (rate(jmeter_response_time_count{requestName=\"$transaction\",  testName=\"$project\", runId = \"$RunID\"}[$__interval]))",
+              "expr": "sum by (requestName) (rate(jmeter_response_time_sum{requestName=~'$transaction',  testName=\"$project\", runId = \"$RunID\"}[$__interval]))\n/ sum by (requestName) (rate(jmeter_response_time_count{requestName=~'$transaction',  testName=\"$project\", runId = \"$RunID\"}[$__interval]))",
               "interval": "",
               "legendFormat": "{{requestName}}",
               "refId": "A"
@@ -2357,13 +2721,9 @@
     }
   ],
   "refresh": "10s",
-  "schemaVersion": 30,
+  "schemaVersion": 31,
   "style": "dark",
-  "tags": [
-    "Jmeter",
-    "prometheus",
-    "kolesnikovm/jmeter-prometheus-listener"
-  ],
+  "tags": [],
   "templating": {
     "list": [
       {
@@ -2428,19 +2788,22 @@
       {
         "allValue": null,
         "current": {
-          "isNone": true,
-          "selected": false,
-          "text": "None",
-          "value": ""
+          "selected": true,
+          "text": [
+            "All"
+          ],
+          "value": [
+            "$__all"
+          ]
         },
         "datasource": null,
         "definition": "label_values(jmeter_latency{runId=~\"$RunID\"}, requestName)",
         "description": null,
         "error": null,
         "hide": 0,
-        "includeAll": false,
+        "includeAll": true,
         "label": "Operation",
-        "multi": false,
+        "multi": true,
         "name": "transaction",
         "options": [],
         "query": {
@@ -2517,16 +2880,6 @@
         "refresh": 2,
         "skipUrlSync": false,
         "type": "interval"
-      },
-      {
-        "description": null,
-        "error": null,
-        "hide": 2,
-        "label": "scrapeInterval",
-        "name": "scrapeInterval",
-        "query": "10s",
-        "skipUrlSync": false,
-        "type": "constant"
       }
     ]
   },
@@ -2560,7 +2913,7 @@
     ]
   },
   "timezone": "",
-  "title": "Jmeter Test Overview",
-  "uid": "In_The_Bus",
-  "version": 42
+  "title": "Jmeter Test Overview Copy",
+  "uid": "7A7y6At7z",
+  "version": 2
 }
