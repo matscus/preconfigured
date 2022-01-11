@@ -19,8 +19,6 @@ import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.client.entity.UrlEncodedFormEntity;
 import org.apache.http.client.methods.CloseableHttpResponse;
 
-
-
 node {
     def scripts = []
     def profiles = []
@@ -76,7 +74,7 @@ node {
             scenario.Replicas = profiles[iter+5].toInteger()
             scenario.CPU = "1"
             scenario.MEM = "2000M"
-            scenario.Port = GetRandomPort("${MASTER_NODE}")
+            scenario.Port = 80 // If nead appent ro ingress, use GetRandomPort("${MASTER_NODE}") and -p param in compose
             scenario.ServiceName = script.replaceAll(~/\.[^\.]+$/, '').toLowerCase()
             scenario.BuildDir = "${buildDir}/${SCRIPTS_PATH}"
             println "generate compose"
@@ -99,18 +97,31 @@ node {
             stage('Dockerfile'){
                 def endpoint =getAddr(uri,true)
                 if ("${SCRIPTS_PATH}" == "/"){
-                    endpoint = endpoint +"${PROJECT_ID}/repository/files/2FDokerfile/raw"
+                    endpoint = endpoint +"/api/v1/repos/" << project << '/' << repos << '/contents' << '/pom.xml'
                 }else{
-                    endpoint = endpoint +"${PROJECT_ID}/repository/files/${SCRIPTS_PATH}%2FDokerfile/raw"
+                    endpoint = endpoint +"/api/v1/repos/" << project << '/' << repos << '/contents' << '/' << "${SCRIPTS_PATH}" << '/pom.xml'
                 }
-                def result = GetDockerfile(endpoint.toString())
-                if (result != "FileNotFound"){
+                def isCustomPOM = false
+                def result = GetFile(endpoint.toString())
+                println "Check pom.xml"
+                if (result.toString() != "null"){
+                    println "Use custom pom.xml"
+                    isCustomPOM = true
+                }
+                endpoint =getAddr(uri,true)
+                if ("${SCRIPTS_PATH}" == "/"){
+                    endpoint = endpoint +"/api/v1/repos/" << project << '/' << repos << '/contents' << '/Dockerfile'
+                }else{
+                    endpoint = endpoint +"/api/v1/repos/" << project << '/' << repos << '/contents' << '/' << "${SCRIPTS_PATH}" << '/Dockerfile'
+                }
+                result = GetFile(endpoint.toString())
+                if (result.toString() != "null"){
                     println "Use custom dockerfile"
                     def text = new String(result.decodeBase64())
                     CreateDockerFile(remote,buildDir,text)
                 }else{
                     println "Use default dockerfile"
-                    CreateDockerFile(remote,buildDir,GenerateDockerFile())
+                    CreateDockerFile(remote,buildDir,GenerateDockerFile(isCustomPOM))
                 }
             }
             stage('Build and push'){
@@ -227,9 +238,10 @@ def GenerateCompose(scenario){
     println COMMAND
     registry = getAddr("${REGISTRY_URL}",false)
     def compose = new StringBuffer()
-    compose << "version: '3.3'\nnetworks:\n    swarm_net:\n        external: true\nservices:\n    jmeter:\n        image: " << registry << "/${scenario.ServiceName}\n"
-    compose << "        ports:\n            - ${scenario.Port}:${scenario.Port}\n        command: '${COMMAND}'\n"
-    compose << "        networks:\n            - swarm_net\n        deploy:\n            replicas: ${scenario.Replicas}\n            resources:\n                limits:\n"
+    compose << "version: '3.3'\nnetworks:\n    jmeter_net:\n        external: true\nservices:\n    jmeter:\n        image: " << registry << "/${scenario.ServiceName}\n"
+    //compose << "        ports:\n            - ${scenario.Port}:${scenario.Port}\n        command: '${COMMAND}'\n"
+    compose << "        command: '${COMMAND}'\n"
+    compose << "        networks:\n            - jmeter_net\n        deploy:\n            replicas: ${scenario.Replicas}\n            resources:\n                limits:\n"
     compose << "                    cpus: '${scenario.CPU}'\n                    memory: '${scenario.MEM}'\n            placement:\n                constraints: [node.role != manager]\n"
     compose << "        labels:\n            org.label-schema.group: 'jmeter'"
     println compose.toString()
@@ -263,7 +275,7 @@ def PushRun(startTime,endTime,scenarios){
         def sc = jsonParse(scns.toString())
         def data = groovy.json.JsonOutput.toJson(
             project: "${SCRIPTS_PATH}", 
-            grafanalink: "http://${GRAFANA_NODE}:3000/d/In_The_Bus/test_overview?orgId=1&refresh=10s&from=${startTimestamp}&to=${endTimestamp}", 
+            grafanalink: "http://172.27.193.132:3000/d/In_The_Bus/test_overview?orgId=1&refresh=10s&from=${startTimestamp}&to=${endTimestamp}", 
             description: "${TEST_DESCRIPTION}",
             scenarios:sc
         )
@@ -271,7 +283,7 @@ def PushRun(startTime,endTime,scenarios){
         def message = groovy.json.JsonOutput.toJson(id: "${BUILD_NUMBER}" as int , starttime: startTimestamp, endtime: endTimestamp, data:dt)
         println("Put message")
         println(message)
-        def endpoint = "http://${AMMUNITION_NODE}:8090/api/v1/runs/new"
+        def endpoint = "http://pkles-gt0002950.solution.gt:8090/api/v1/runs/new"
         def httpClient = createAcceptCrt()
         def httppost = new HttpPost(endpoint)
         httppost.setEntity(new StringEntity(message.toString()))
@@ -291,32 +303,39 @@ def PushRun(startTime,endTime,scenarios){
     }
 }
 
-def GenerateDockerFile(){
+def GenerateDockerFile(isCustomPOM){
     def registry = getAddr("${REGISTRY_URL}",false)
     def dockerfile = new StringBuffer()
-        dockerfile << 'ARG imagetag\n'
-        dockerfile << 'FROM ' << registry <<'/jmeter_base:$imagetag\n'
-        dockerfile << 'ENV	JMETER_HOME	/opt/jmeter\n'
-        dockerfile << 'WORKDIR $JMETER_HOME\n'
-        dockerfile << 'ARG script\n'
-        dockerfile << 'COPY $script $JMETER_HOME/src/test/jmeter/\n'
+    dockerfile << 'ARG imagetag\n'
+    dockerfile << 'FROM ' << registry <<'/jmeter_base:$imagetag\n'
+    dockerfile << 'ENV	JMETER_HOME	/opt/jmeter\n'
+    dockerfile << 'WORKDIR $JMETER_HOME\n'
+    dockerfile << 'ARG script\n'
+    if (isCustomPOM){
+       dockerfile << 'COPY pom.xml $JMETER_HOME/\n'
+    }
+    dockerfile << 'COPY $script $JMETER_HOME/src/test/jmeter/\n'
     return dockerfile.toString()
 }
 
-def GetDockerfile(endpoint){
+def GetFile(endpoint){
     try {
         def httpclient = createAcceptCrt()
         def httpget = new HttpGet(endpoint)
         def response = httpclient.execute(httpget)
         def entity = response.getEntity()
-        return EntityUtils.toString(entity)
+        def result = EntityUtils.toString(entity)
+        def json =  jsonParse(result)
+        return json.content.toString()
     }catch(Exception e){
         println "Exception "+ e 
         return "FileNotFound"
     }
 }
 
+
 def CreateDockerFile(remote,buildDir, text){
+    println text
     writeFile file: "${WORKSPACE}/${BUILD_ID}/Dockerfile", text: text
     sshPut remote: remote, from: "${WORKSPACE}/${BUILD_ID}/Dockerfile", into: "${buildDir}/${SCRIPTS_PATH}/Dockerfile"
 }
@@ -341,7 +360,6 @@ def getAddr(uri,schema){
         addr = matches[0].getAt(3)
     }
     if (matches[0].getAt(4).toString() != "null" ){
-        println " NOT NILL"
         addr = addr + matches[0].getAt(4)
     }
     return addr

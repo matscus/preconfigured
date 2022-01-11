@@ -615,7 +615,8 @@ if(status){
     </hudson.model.ParametersDefinitionProperty>
   </properties>
   <definition class="org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition" plugin="workflow-cps@2.92">
-    <script>import javax.net.ssl.*;
+    <script>
+import javax.net.ssl.*;
 import java.sql.Timestamp;
 import java.io.IOException;
 import org.yaml.snakeyaml.Yaml;
@@ -641,45 +642,45 @@ node {
     def profiles = []
     def scenarios = []
     def remote = [:]
-    def buildDir = &quot;/opt/swarmfs/builder/&quot; + &quot;${BUILD_ID}&quot;
+    def buildDir = "/opt/swarmfs/builder/" + "${BUILD_ID}"
     def confluenceData = [:]
     Long TestDuration = 0
-    def sdf = new SimpleDateFormat(&quot;MM/dd/yyyy HH:mm:ss&quot;)
-    def startTime =&apos;&apos;
-    def endTime = &apos;&apos;
-    def uri = new URI(&quot;${REPOSITORY_URL}&quot;)
-    def temp = uri.getPath().split(&quot;/&quot;).takeRight(2)
+    def sdf = new SimpleDateFormat("MM/dd/yyyy HH:mm:ss")
+    def startTime =''
+    def endTime = ''
+    def uri = new URI("${REPOSITORY_URL}")
+    def temp = uri.getPath().split("/").takeRight(2)
     def project = temp[0]
-    def repos = temp[1].replaceAll(&quot;.git&quot;,&quot;&quot;)
-    Long delayed = &quot;${DELAYED_START}&quot;.toLong() * 60
-    stage(&apos;Delayed start&apos;){
-        println &quot;Delayed start: ${DELAYED_START} minutes&quot;
-        sleep(&quot;${delayed}&quot;)
+    def repos = temp[1].replaceAll(".git","")
+    Long delayed = "${DELAYED_START}".toLong() * 60
+    stage('Delayed start'){
+        println "Delayed start: ${DELAYED_START} minutes"
+        sleep("${delayed}")
     }
-    stage(&apos;Pre-configure&apos;) {
-        withCredentials([usernamePassword(credentialsId: &apos;docker_swarm&apos;, usernameVariable: &apos;USERNAME&apos;,passwordVariable: &apos;PASSWORD&apos;)]) {
-            println &quot;Set  remote credential&quot;
-            remote.name = &quot;docker_swarm&quot;
-            remote.host = &quot;${MASTER_NODE}&quot;
-            remote.user = &quot;$USERNAME&quot;
+    stage('Pre-configure') {
+        withCredentials([usernamePassword(credentialsId: 'docker_swarm', usernameVariable: 'USERNAME',passwordVariable: 'PASSWORD')]) {
+            println "Set  remote credential"
+            remote.name = "docker_swarm"
+            remote.host = "${MASTER_NODE}"
+            remote.user = "$USERNAME"
             remote.port = 9022
             remote.replica = 1
-            remote.password = &quot;$PASSWORD&quot;
+            remote.password = "$PASSWORD"
             remote.allowAnyHosts = true
         }
-        println &quot;Add scripts&quot;
-        &quot;${SCRIPTS}&quot;.split(&quot;,&quot;).each { script -&gt;
+        println "Add scripts"
+        "${SCRIPTS}".split(",").each { script ->
             scripts.add(script)
         }
-        println &quot;Add profiles&quot;
-        &quot;${PROFILE}&quot;.split(&quot;,&quot;).each { profile -&gt;
+        println "Add profiles"
+        "${PROFILE}".split(",").each { profile ->
             profiles.add(profile.toLowerCase())
         }
-        println &quot;Preparation scenario&quot;
+        println "Preparation scenario"
         Integer iter = 0
         Integer cnt = profiles.size()/scripts.size()
         def allScriptDuration=[]
-        scripts.each { script -&gt;
+        scripts.each { script ->
             def scenario =[:]
             scenario.Scenario = script
             scenario.TPS = profiles[iter+0].toFloat()
@@ -689,89 +690,102 @@ node {
             scenario.TestDuration = profiles[iter+4].toInteger()
             allScriptDuration.add(profiles[iter+4].toLong() * 60)
             scenario.Replicas = profiles[iter+5].toInteger()
-            scenario.CPU = &quot;1&quot;
-            scenario.MEM = &quot;2000M&quot;
-            scenario.Port = GetRandomPort(&quot;${MASTER_NODE}&quot;)
-            scenario.ServiceName = script.replaceAll(~/\.[^\.]+$/, &apos;&apos;).toLowerCase()
-            scenario.BuildDir = &quot;${buildDir}/${SCRIPTS_PATH}&quot;
-            println &quot;generate compose&quot;
+            scenario.CPU = "1"
+            scenario.MEM = "2000M"
+            scenario.Port = 80 // If nead appent ro ingress, use GetRandomPort("${MASTER_NODE}") and -p param in compose
+            scenario.ServiceName = script.replaceAll(~/\.[^\.]+$/, '').toLowerCase()
+            scenario.BuildDir = "${buildDir}/${SCRIPTS_PATH}"
+            println "generate compose"
             scenario.Compose = GenerateCompose(scenario)
             scenarios.add(scenario)
             iter = iter + cnt
         }
         TestDuration = allScriptDuration.max()
-        println &quot;Pre-configure complited&quot;
+        println "Pre-configure complited"
     }
 
-    stage(&quot;Global choice&quot;){
+    stage("Global choice"){
         try{
-            stage(&apos;Create temp dir&apos;) {
+            stage('Create temp dir') {
                 CreateBuildDir(remote,buildDir)
             }
-            stage(&apos;Clone repo&apos;){
+            stage('Clone repo'){
                 CloneRepo(remote,buildDir)
             }
-            stage(&apos;Dockerfile&apos;){
+            stage('Dockerfile'){
                 def endpoint =getAddr(uri,true)
-                if (&quot;${SCRIPTS_PATH}&quot; == &quot;/&quot;){
-                    endpoint = endpoint +&quot;/api/v1/repos/&quot; &lt;&lt; project &lt;&lt; &apos;/&apos; &lt;&lt; repos &lt;&lt; &apos;/contents&apos; &lt;&lt; &apos;/Dockerfile&apos;
+                if ("${SCRIPTS_PATH}" == "/"){
+                    endpoint = endpoint +"/api/v1/repos/" << project << '/' << repos << '/contents' << '/pom.xml'
                 }else{
-                    endpoint = endpoint +&quot;/api/v1/repos/&quot; &lt;&lt; project &lt;&lt; &apos;/&apos; &lt;&lt; repos &lt;&lt; &apos;/contents&apos; &lt;&lt; &apos;/&apos; &lt;&lt; &quot;${SCRIPTS_PATH}&quot; &lt;&lt; &apos;/Dockerfile&apos;
+                    endpoint = endpoint +"/api/v1/repos/" << project << '/' << repos << '/contents' << '/' << "${SCRIPTS_PATH}" << '/pom.xml'
                 }
-                def result = GetDockerfile(endpoint.toString())
-                if (result.toString() != &quot;null&quot;){
-                    println &quot;Use custom dockerfile&quot;
+                def isCustomPOM = false
+                def result = GetFile(endpoint.toString())
+                println "Check pom.xml"
+                if (result.toString() != "null"){
+                    println "Use custom pom.xml"
+                    isCustomPOM = true
+                }
+                endpoint =getAddr(uri,true)
+                if ("${SCRIPTS_PATH}" == "/"){
+                    endpoint = endpoint +"/api/v1/repos/" << project << '/' << repos << '/contents' << '/Dockerfile'
+                }else{
+                    endpoint = endpoint +"/api/v1/repos/" << project << '/' << repos << '/contents' << '/' << "${SCRIPTS_PATH}" << '/Dockerfile'
+                }
+                result = GetFile(endpoint.toString())
+                if (result.toString() != "null"){
+                    println "Use custom dockerfile"
                     def text = new String(result.decodeBase64())
                     CreateDockerFile(remote,buildDir,text)
                 }else{
-                    println &quot;Use default dockerfile&quot;
-                    CreateDockerFile(remote,buildDir,GenerateDockerFile())
+                    println "Use default dockerfile"
+                    CreateDockerFile(remote,buildDir,GenerateDockerFile(isCustomPOM))
                 }
             }
-            stage(&apos;Build and push&apos;){
+            stage('Build and push'){
                 def runners = [:]
-                scenarios.each{ scenario -&gt;
-                    writeFile file: &quot;${WORKSPACE}/${BUILD_ID}/${scenario.ServiceName}.yml&quot;, text: scenario.Compose
-                    sshPut remote: remote, from: &quot;${WORKSPACE}/${BUILD_ID}/${scenario.ServiceName}.yml&quot;, into: &quot;${scenario.BuildDir}/${scenario.ServiceName}.yml&quot;
+                scenarios.each{ scenario ->
+                    writeFile file: "${WORKSPACE}/${BUILD_ID}/${scenario.ServiceName}.yml", text: scenario.Compose
+                    sshPut remote: remote, from: "${WORKSPACE}/${BUILD_ID}/${scenario.ServiceName}.yml", into: "${scenario.BuildDir}/${scenario.ServiceName}.yml"
                     runners[scenario.ServiceName] = { Build(remote,scenario) }
                 }
                 parallel runners
             }
-            stage(&apos;Deploy service&apos;){
+            stage('Deploy service'){
                 def runners = [:]
-                scenarios.each{ scenario -&gt;
+                scenarios.each{ scenario ->
                      runners[scenario.ServiceName] = { Deploy(remote,scenario) }
                 }
                 parallel runners
             }
-            stage(&apos;Running&apos;) {
-                println &quot;Scenario runner &quot;
-                println &quot;Duration : &quot;+TestDuration
+            stage('Running') {
+                println "Scenario runner "
+                println "Duration : "+TestDuration
                 def start = new Date()
                 startTime = sdf.format(start)
                 sleep(TestDuration)
             } 
         }catch(Exception ex){
             println ex
-            currentBuild.result = &quot;FAILURE&quot;
+            currentBuild.result = "FAILURE"
         }finally{
-            stage(&apos;Undeploy&apos;) {
+            stage('Undeploy') {
                 def runners = [:]
-                    scenarios.each{ scenario -&gt;
+                    scenarios.each{ scenario ->
                         runners[scenario.ServiceName] = { UnDeploy(remote,scenario) }
                     }
                 parallel runners
-                println &quot;docker stack rm complited&quot;
+                println "docker stack rm complited"
                 def end = new Date()
                 endTime = sdf.format(end)
             } 
-            stage(&apos;Cleaning&apos;) {
-                cmd = &quot;rm -rf &quot; &lt;&lt; buildDir
+            stage('Cleaning') {
+                cmd = "rm -rf " << buildDir
                 sshCommand remote: remote, command: cmd.toString()
                 deleteDir()
-                println &quot;temp dir removed&quot;
+                println "temp dir removed"
             }
-            stage(&apos;Insert test info&apos;){
+            stage('Insert test info'){
                 PushRun(startTime,endTime,scenarios)
             }
         }
@@ -779,45 +793,45 @@ node {
 }
 
 def CreateBuildDir(remote,buildDir){
-    def cmd = &quot;mkdir &quot; &lt;&lt; buildDir
+    def cmd = "mkdir " << buildDir
     sshCommand remote: remote, command: cmd.toString()
-    println &quot;dir &quot;&lt;&lt; buildDir &lt;&lt; &quot; created&quot;
+    println "dir "<< buildDir << " created"
 }
 def CloneRepo(remote,buildDir){
-    def cmd = &quot;git clone -c http.sslVerify=false ${REPOSITORY_URL} &quot; &lt;&lt; buildDir
+    def cmd = "git clone -c http.sslVerify=false ${REPOSITORY_URL} " << buildDir
     sshCommand remote: remote, command: cmd.toString()
-    println &quot;Clone  ${REPOSITORY_URL} complited&quot;
+    println "Clone  ${REPOSITORY_URL} complited"
 }
 
 def Build(remote,scenario){
-    registry = getAddr(&quot;${REGISTRY_URL}&quot;,false)
-    def cmd =  &quot;cd &quot; &lt;&lt; scenario.BuildDir &lt;&lt;  &quot; &amp;&amp; docker build  -t &quot;&lt;&lt; registry &lt;&lt;&quot;/&quot; &lt;&lt; scenario.ServiceName &lt;&lt; &quot; --build-arg script=&quot; &lt;&lt; scenario.Scenario &lt;&lt; &quot; --build-arg imagetag=&quot; &lt;&lt; &quot;${JMETER_BASE_VERSION}&quot; &lt;&lt; &quot; &quot; &lt;&lt;  scenario.BuildDir
+    registry = getAddr("${REGISTRY_URL}",false)
+    def cmd =  "cd " << scenario.BuildDir <<  " && docker build  -t "<< registry <<"/" << scenario.ServiceName << " --build-arg script=" << scenario.Scenario << " --build-arg imagetag=" << "${JMETER_BASE_VERSION}" << " " <<  scenario.BuildDir
     sshCommand remote: remote, command: cmd.toString()
-    println &quot;docker build complited&quot;
-    cmd = &quot;docker push &quot; &lt;&lt; registry &lt;&lt;&quot;/&quot; &lt;&lt; scenario.ServiceName
+    println "docker build complited"
+    cmd = "docker push " << registry <<"/" << scenario.ServiceName
     sshCommand remote: remote, command: cmd.toString()
-    println &quot;docker push complited&quot;
+    println "docker push complited"
 }
 
 def Deploy(remote,scenario){
-    println &quot;Service deploy&quot;
-    cmd = &quot;cd &quot; &lt;&lt; scenario.BuildDir &lt;&lt; &quot; &amp;&amp;  docker stack deploy  --compose-file &quot; &lt;&lt; scenario.ServiceName &lt;&lt; &quot;.yml &quot; &lt;&lt; scenario.ServiceName
+    println "Service deploy"
+    cmd = "cd " << scenario.BuildDir << " &&  docker stack deploy  --compose-file " << scenario.ServiceName << ".yml " << scenario.ServiceName
     sshCommand remote: remote, command: cmd.toString()
-    println &quot;docker stack deploy complited&quot;
+    println "docker stack deploy complited"
 }
 
 def GetRandomPort(master){ 
     while(true){
-        def port = (int)(Math.random() * ((9099 - 9001) + 1)) + 9001
-        def endpoint = &quot;http://&quot; &lt;&lt; master &lt;&lt; &quot;:&quot; &lt;&lt; port &lt;&lt; &quot;/metrics&quot;
+        def port = (int)(Math.random() * ((12000 - 11000) + 1)) + 11000
+        def endpoint = "http://" << master << ":" << port << "/metrics"
         println endpoint
         def get = new URL(endpoint.toString()).openConnection()
         try {
-            get.setRequestMethod(&quot;GET&quot;);
+            get.setRequestMethod("GET");
             get.connect();
-            println &quot;port is use&quot;
+            println "port is use"
         }catch(Exception e){
-            println &quot;Exception &quot;+ e 
+            println "Exception "+ e 
             return port
         }
     }
@@ -827,38 +841,39 @@ def GenerateCompose(scenario){
     def TPS = (int)(scenario.TPS / scenario.Replicas).round(0)
     def TARGET = (int)((scenario.TPS * scenario.SLA) / scenario.Replicas).round(0)
     def STEP = (int)(TPS / scenario.RumpUPSteps)
-    def STEPTIME = scenario.RumpUpTime / scenario.RumpUPSteps + &quot;m&quot;
-    def DURATION = scenario.TestDuration + &quot;m&quot;
+    def STEPTIME = scenario.RumpUpTime / scenario.RumpUPSteps + "m"
+    def DURATION = scenario.TestDuration + "m"
     if (STEP == 0 ){
         STEP = 1
     }
-    def TESTNAME =&quot;&quot;
-    if (&quot;${SCRIPTS_PATH}&quot; == &quot;/&quot;){
-        TESTNAME =&quot;${Global}&quot;
+    def TESTNAME =""
+    if ("${SCRIPTS_PATH}" == "/"){
+        TESTNAME ="${Global}"
     }else{
-        TESTNAME =&quot;${SCRIPTS_PATH}&quot;
+        TESTNAME ="${SCRIPTS_PATH}"
     }
-    def COMMAND = &quot;mvn verify -DrunId=${BUILD_ID} -Dthreads=${TARGET} -DtestName=${TESTNAME} -DexporterPort=${scenario.Port} -Dduration=${scenario.TestDuration} -D \&quot;load_profile=step(1,${TPS},${STEP},${STEPTIME}) const(${TPS},${DURATION})\&quot;&quot;
+    def COMMAND = "mvn verify -DrunId=${BUILD_ID} -Dthreads=${TARGET} -DtestName=${TESTNAME} -DexporterPort=${scenario.Port} -Dduration=${scenario.TestDuration} -D \"load_profile=step(1,${TPS},${STEP},${STEPTIME}) const(${TPS},${DURATION})\""
     println COMMAND
-    registry = getAddr(&quot;${REGISTRY_URL}&quot;,false)
+    registry = getAddr("${REGISTRY_URL}",false)
     def compose = new StringBuffer()
-    compose &lt;&lt; &quot;version: &apos;3.3&apos;\nnetworks:\n    swarm_net:\n        external: true\nservices:\n    jmeter:\n        image: &quot; &lt;&lt; registry &lt;&lt; &quot;/${scenario.ServiceName}\n&quot;
-    compose &lt;&lt; &quot;        ports:\n            - ${scenario.Port}:${scenario.Port}\n        command: &apos;${COMMAND}&apos;\n&quot;
-    compose &lt;&lt; &quot;        networks:\n            - swarm_net\n        deploy:\n            replicas: ${scenario.Replicas}\n            resources:\n                limits:\n&quot;
-    compose &lt;&lt; &quot;                    cpus: &apos;${scenario.CPU}&apos;\n                    memory: &apos;${scenario.MEM}&apos;\n            placement:\n                constraints: [node.role != manager]\n&quot;
-    compose &lt;&lt; &quot;        labels:\n            org.label-schema.group: &apos;jmeter&apos;&quot;
+    compose << "version: '3.3'\nnetworks:\n    jmeter_net:\n        external: true\nservices:\n    jmeter:\n        image: " << registry << "/${scenario.ServiceName}\n"
+    //compose << "        ports:\n            - ${scenario.Port}:${scenario.Port}\n        command: '${COMMAND}'\n"
+    compose << "        command: '${COMMAND}'\n"
+    compose << "        networks:\n            - jmeter_net\n        deploy:\n            replicas: ${scenario.Replicas}\n            resources:\n                limits:\n"
+    compose << "                    cpus: '${scenario.CPU}'\n                    memory: '${scenario.MEM}'\n            placement:\n                constraints: [node.role != manager]\n"
+    compose << "        labels:\n            org.label-schema.group: 'jmeter'"
     println compose.toString()
     return compose.toString()
 }
 
 def UnDeploy(remote,scenario){
-    sshCommand remote: remote, command:&quot;docker stack rm ${scenario.ServiceName}&quot;
-    println &quot;Scenario ${scenario.ServiceName} stoped&quot;
+    sshCommand remote: remote, command:"docker stack rm ${scenario.ServiceName}"
+    println "Scenario ${scenario.ServiceName} stoped"
 }
 
 def PushRun(startTime,endTime,scenarios){
     try{
-        def sdf = new SimpleDateFormat(&quot;MM/dd/yyyy HH:mm:ss&quot;)
+        def sdf = new SimpleDateFormat("MM/dd/yyyy HH:mm:ss")
         Date time = sdf.parse(startTime)
         Timestamp timestamp = new Timestamp(time.getTime())
         def startTimestamp = timestamp.getTime()
@@ -866,7 +881,7 @@ def PushRun(startTime,endTime,scenarios){
         timestamp = new Timestamp(time.getTime())
         def endTimestamp = timestamp.getTime()
         def scns=[]
-        scenarios.each { val -&gt;
+        scenarios.each { val ->
             def s = groovy.json.JsonOutput.toJson(
                 name: val.ServiceName, 
                 tps: val.TPS as int, 
@@ -877,16 +892,16 @@ def PushRun(startTime,endTime,scenarios){
         }
         def sc = jsonParse(scns.toString())
         def data = groovy.json.JsonOutput.toJson(
-            project: &quot;${SCRIPTS_PATH}&quot;, 
-            grafanalink: &quot;http://${GRAFANA_NODE}:3000/d/In_The_Bus/test_overview?orgId=1&amp;refresh=10s&amp;from=${startTimestamp}&amp;to=${endTimestamp}&quot;, 
-            description: &quot;${TEST_DESCRIPTION}&quot;,
+            project: "${SCRIPTS_PATH}", 
+            grafanalink: "http://172.27.193.132:3000/d/In_The_Bus/test_overview?orgId=1&refresh=10s&from=${startTimestamp}&to=${endTimestamp}", 
+            description: "${TEST_DESCRIPTION}",
             scenarios:sc
         )
         def dt = jsonParse(data)
-        def message = groovy.json.JsonOutput.toJson(id: &quot;${BUILD_NUMBER}&quot; as int , starttime: startTimestamp, endtime: endTimestamp, data:dt)
-        println(&quot;Put message&quot;)
+        def message = groovy.json.JsonOutput.toJson(id: "${BUILD_NUMBER}" as int , starttime: startTimestamp, endtime: endTimestamp, data:dt)
+        println("Put message")
         println(message)
-        def endpoint = &quot;http://${AMMUNITION_NODE}:8090/api/v1/runs/new&quot;
+        def endpoint = "http://pkles-gt0002950.solution.gt:8090/api/v1/runs/new"
         def httpClient = createAcceptCrt()
         def httppost = new HttpPost(endpoint)
         httppost.setEntity(new StringEntity(message.toString()))
@@ -900,25 +915,28 @@ def PushRun(startTime,endTime,scenarios){
             def result = EntityUtils.toString(entity)
             println result
         }
-        println &quot;Push run code: &quot;+response.getStatusLine().getStatusCode()
+        println "Push run code: "+response.getStatusLine().getStatusCode()
     }catch(Exception e){
-        println &quot;Exception &quot;+ e 
+        println "Exception "+ e 
     }
 }
 
-def GenerateDockerFile(){
-    def registry = getAddr(&quot;${REGISTRY_URL}&quot;,false)
+def GenerateDockerFile(isCustomPOM){
+    def registry = getAddr("${REGISTRY_URL}",false)
     def dockerfile = new StringBuffer()
-        dockerfile &lt;&lt; &apos;ARG imagetag\n&apos;
-        dockerfile &lt;&lt; &apos;FROM &apos; &lt;&lt; registry &lt;&lt;&apos;/jmeter_base:$imagetag\n&apos;
-        dockerfile &lt;&lt; &apos;ENV	JMETER_HOME	/opt/jmeter\n&apos;
-        dockerfile &lt;&lt; &apos;WORKDIR $JMETER_HOME\n&apos;
-        dockerfile &lt;&lt; &apos;ARG script\n&apos;
-        dockerfile &lt;&lt; &apos;COPY $script $JMETER_HOME/src/test/jmeter/\n&apos;
+    dockerfile << 'ARG imagetag\n'
+    dockerfile << 'FROM ' << registry <<'/jmeter_base:$imagetag\n'
+    dockerfile << 'ENV	JMETER_HOME	/opt/jmeter\n'
+    dockerfile << 'WORKDIR $JMETER_HOME\n'
+    dockerfile << 'ARG script\n'
+    if (isCustomPOM){
+       dockerfile << 'COPY pom.xml $JMETER_HOME/\n'
+    }
+    dockerfile << 'COPY $script $JMETER_HOME/src/test/jmeter/\n'
     return dockerfile.toString()
 }
 
-def GetDockerfile(endpoint){
+def GetFile(endpoint){
     try {
         def httpclient = createAcceptCrt()
         def httpget = new HttpGet(endpoint)
@@ -928,16 +946,16 @@ def GetDockerfile(endpoint){
         def json =  jsonParse(result)
         return json.content.toString()
     }catch(Exception e){
-        println &quot;Exception &quot;+ e 
-        return &quot;FileNotFound&quot;
+        println "Exception "+ e 
+        return "FileNotFound"
     }
 }
 
 
 def CreateDockerFile(remote,buildDir, text){
     println text
-    writeFile file: &quot;${WORKSPACE}/${BUILD_ID}/Dockerfile&quot;, text: text
-    sshPut remote: remote, from: &quot;${WORKSPACE}/${BUILD_ID}/Dockerfile&quot;, into: &quot;${buildDir}/${SCRIPTS_PATH}/Dockerfile&quot;
+    writeFile file: "${WORKSPACE}/${BUILD_ID}/Dockerfile", text: text
+    sshPut remote: remote, from: "${WORKSPACE}/${BUILD_ID}/Dockerfile", into: "${buildDir}/${SCRIPTS_PATH}/Dockerfile"
 }
 
 
@@ -952,19 +970,19 @@ def jsonParse(def json) {
     new groovy.json.JsonSlurperClassic().parseText(json)
 }
 def getAddr(uri,schema){
-    def matches = (uri =~ &quot;^((http[s]?):\\/)?\\/?([^:\\/\\s]+)(:([^\\/]*))?&quot;)
-    def addr = &quot;&quot;
+    def matches = (uri =~ "^((http[s]?):\\/)?\\/?([^:\\/\\s]+)(:([^\\/]*))?")
+    def addr = ""
     if (schema){
-        addr = matches[0].getAt(2)+&quot;://&quot; + matches[0].getAt(3)
+        addr = matches[0].getAt(2)+"://" + matches[0].getAt(3)
     }else{
         addr = matches[0].getAt(3)
     }
-    if (matches[0].getAt(4).toString() != &quot;null&quot; ){
-        println &quot; NOT NILL&quot;
+    if (matches[0].getAt(4).toString() != "null" ){
         addr = addr + matches[0].getAt(4)
     }
     return addr
-}</script>
+}
+</script>
     <sandbox>true</sandbox>
   </definition>
   <triggers/>
