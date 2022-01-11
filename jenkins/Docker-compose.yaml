@@ -1,0 +1,39 @@
+version: "3"
+
+volumes:
+    jenkins_data: {}
+
+networks:
+  swarm_net:
+    external: true
+
+services:
+  jenkins:
+    image: ${REGISTRY_URL}/jenkins
+    user: root
+    ports:
+      - 8083:8080
+      - 50003:50000
+    environment:
+      - JENKINS_ADMIN_ID=${JENKINS_ADMIN_ID} 
+      - JENKINS_ADMIN_PASSWORD=${JENKINS_ADMIN_PASSWORD}
+      - JENKINS_LOCATION_URL=${JENKINS_LOCATION_URL}
+      - GITEA_REPOSITORY_URL=${GITEA_REPOSITORY_URL}
+      - GITLAB_REPOSITORY_URL = ${GITLAB_REPOSITORY_URL}
+      - BITBUCKET_REPOSITORY_URL = ${BITBUCKET_REPOSITORY_URL}
+
+    volumes:
+      - jenkins_data:/var/jenkins_home
+      - /var/run/docker.sock:/var/run/docker.sock
+    networks:
+      - swarm_net
+    deploy:
+        replicas: 1
+        resources:
+          limits:
+            cpus: "1"
+            memory: '2G'
+        placement: 
+            constraints: [node.role == manager]
+    labels:
+      org.label-schema.group: "jenkins"
