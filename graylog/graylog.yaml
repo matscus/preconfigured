@@ -1,0 +1,60 @@
+version: "3.8"
+
+services:
+  mongodb:
+    container_name: mongodb
+    image: "mongo:4.2"
+    volumes:
+      - "mongodb_data:/data/db"
+    restart: "on-failure"
+
+  elasticsearch:
+    container_name: elasticsearch
+    environment:
+      ES_JAVA_OPTS: "-Xms1g -Xmx1g"
+      bootstrap.memory_lock: "true"
+      discovery.type: "single-node"
+      http.host: "0.0.0.0"
+      action.auto_create_index: "false"
+    image: "docker.elastic.co/elasticsearch/elasticsearch-oss:7.10.2"
+    ulimits:
+      memlock:
+        hard: -1
+        soft: -1
+    volumes:
+      - "es_data:/usr/share/elasticsearch/data"
+    restart: "on-failure"
+
+  graylog:
+    image: "graylog/graylog:4.2"
+    container_name: graylog
+    depends_on:
+      elasticsearch:
+        condition: "service_started"
+      mongodb:
+        condition: "service_started"
+    entrypoint: "/usr/bin/tini -- wait-for-it elasticsearch:9200 --  /docker-entrypoint.sh"
+    environment:
+      GRAYLOG_NODE_ID_FILE: "/usr/share/graylog/data/config/node-id"
+      GRAYLOG_ROOT_PASSWORD_SHA2: 2092899A47EF9E4739F19DACDA12B9F38E64B14AEC4322F7B37BDEF091CCB15F
+      GRAYLOG_HTTP_BIND_ADDRESS: "0.0.0.0:9000"
+      GRAYLOG_HTTP_EXTERNAL_URI: "http://localhost:9000/"
+      GRAYLOG_ELASTICSEARCH_HOSTS: "http://elasticsearch:9200"
+      GRAYLOG_MONGODB_URI: "mongodb://${MONGODB}:27017/graylog"
+    ports:
+      - 9000:9000
+      - 1514:1514
+      - 1514:1514/udp
+      # - 12201:12201
+      # - 12201:12201/udp
+    volumes:
+      - "graylog_data:/usr/share/graylog/data/data"
+      - "graylog_journal:/usr/share/graylog/data/journal"
+    restart: "on-failure"
+
+
+volumes:
+  mongodb_data:
+  es_data:
+  graylog_data:
+  graylog_journal: 
