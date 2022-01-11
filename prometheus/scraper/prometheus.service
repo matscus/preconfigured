@@ -1,9 +1,0 @@
-[Unit]
-Description=Prometheus
-
-[Service]
-User=prometheus
-ExecStart=/opt/prometheus_data/prometheus/prometheus --web.enable-lifecycle  --storage.tsdb.path=/opt/prometheus_data/data --storage.tsdb.retention.time 1d --config.file=/opt/prometheus_data/prometheus/prometheus.yml
-
-[Install]
-WantedBy=multy-user.target
