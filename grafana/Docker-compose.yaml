@@ -1,0 +1,34 @@
+version: "3.3"
+ 
+volumes:
+    grafana_data: {}
+
+networks:
+  swarm_net:
+    external: true
+
+services:
+  grafana:
+    image: ${REGISTRY_URL}/grafana
+    volumes:
+      - grafana_data:/var/lib/grafana
+
+    environment:
+      - GF_INSTALL_PLUGINS=https://github.com/cloudspout/cloudspout-button-panel/releases/download/7.0.23/cloudspout-button-panel.zip;cloudspout-button-panel
+      - GF_SECURITY_ADMIN_USER=${ADMIN_USER:-admin}
+      - GF_SECURITY_ADMIN_PASSWORD=${ADMIN_PASSWORD:-admin}
+      - GF_USERS_ALLOW_SIGN_UP=false
+    ports:
+      - 3000:3000
+    networks:
+      - swarm_net
+    deploy:
+      replicas: 1
+      resources:
+        limits:
+          cpus: "1"
+          memory: '2G'
+      placement: 
+        constraints: [node.role == manager]
+    labels:
+      org.label-schema.group: "monitoring"

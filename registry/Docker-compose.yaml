@@ -1,0 +1,53 @@
+version: "3.3"
+ 
+volumes:
+    registry_data: {}
+
+networks:
+  swarm_net:
+    external: true
+
+services:
+###########Registry###########
+  registry:
+    image: registry:2
+    ports:
+      - 5000:5000
+    environment:
+      - REGISTRY_STORAGE_DELETE_ENABLED=true
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ../result/registry/registry_config.yaml:/etc/docker/registry/config.yml
+      - registry_data:/var/lib/registry
+    networks:
+      - swarm_net
+    deploy:
+        replicas: 1
+        resources:
+          limits:
+            cpus: "1"
+        placement: 
+            constraints: [node.role == manager]
+    labels:
+      org.label-schema.group: "registry"
+
+  docker-registry-ui:
+    image: joxit/docker-registry-ui
+    ports:
+      - "8800:80"
+    environment:
+      - REGISTRY_URL=http://${REGISTRY_URL}
+      - REGISTRY_TITLE=swarm_registry
+      - REGISTRY_HTTP_HEADERS_Access-Control-Allow-Origin="*"
+    networks:
+      - swarm_net
+    deploy:
+      replicas: 1
+      resources:
+        limits:
+          cpus: "0.3"
+          memory: '300M'
+      placement: 
+        constraints: [node.role == manager]
+    labels:
+      org.label-schema.group: "registry"

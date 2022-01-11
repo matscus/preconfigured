@@ -1,0 +1,37 @@
+version: "3.3"
+ 
+volumes:
+    prometheus_data: {}
+
+networks:
+  swarm_net:
+    external: true
+
+
+services:
+  prometheus:
+    image: prom/prometheus
+    user: root
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--storage.tsdb.retention=200h'
+      - '--web.enable-lifecycle'
+      - '--enable-feature=remote-write-receiver'
+      - '--web.enable-admin-api'
+    ports:
+      - 9090:9090
+    networks:
+      - swarm_net
+    deploy:
+        replicas: 1
+        placement: 
+            constraints: [node.role == manager]
+    labels:
+      org.label-schema.group: "monitoring"
