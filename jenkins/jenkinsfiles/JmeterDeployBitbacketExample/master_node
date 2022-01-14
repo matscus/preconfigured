@@ -1,2 +1,0 @@
-def swarmNode="${SWARM_MASTER_DEPLOY_NODE}"
-return [swarmNode+":selected:disabled"]

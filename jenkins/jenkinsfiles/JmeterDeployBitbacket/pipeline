@@ -20,6 +20,7 @@ import org.apache.http.client.entity.UrlEncodedFormEntity;
 import org.apache.http.client.methods.CloseableHttpResponse;
 
 node {
+    def runUUID = ""
     def scripts = []
     def profiles = []
     def scenarios = []
@@ -27,7 +28,7 @@ node {
     def buildDir = "/opt/swarmfs/builder/" + "${BUILD_ID}"
     def confluenceData = [:]
     Long TestDuration = 0
-    def sdf = new SimpleDateFormat("MM/dd/yyyy HH:mm:ss")
+    def sdf = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSXXX")
     def startTime =''
     def endTime = ''
     def uri = new URI("${REPOSITORY_URL}")
@@ -43,9 +44,9 @@ node {
         withCredentials([usernamePassword(credentialsId: 'docker_swarm', usernameVariable: 'USERNAME',passwordVariable: 'PASSWORD')]) {
             println "Set  remote credential"
             remote.name = "docker_swarm"
-            remote.host = "${MASTER_NODE}"
+            remote.host = "${SWARM_MASTER_NODE}"
             remote.user = "$USERNAME"
-            remote.port = 9022
+            remote.port = "${SWARM_MASTER_NODE_SSHPORT}".toInteger()
             remote.replica = 1
             remote.password = "$PASSWORD"
             remote.allowAnyHosts = true
@@ -72,9 +73,9 @@ node {
             scenario.TestDuration = profiles[iter+4].toInteger()
             allScriptDuration.add(profiles[iter+4].toLong() * 60)
             scenario.Replicas = profiles[iter+5].toInteger()
-            scenario.CPU = "1"
-            scenario.MEM = "2000M"
-            scenario.Port = GetRandomPort("${MASTER_NODE}")
+            scenario.CPU = profiles[iter+6].toInteger()
+            scenario.MEM = profiles[iter+7].toInteger()
+            scenario.Port =  80 // If need append to ingress, use GetRandomPort("${SWARM_MASTER_NODE}") and -p in compose 
             scenario.ServiceName = script.replaceAll(~/\.[^\.]+$/, '').toLowerCase()
             scenario.BuildDir = "${buildDir}/${SCRIPTS_PATH}"
             println "generate compose"
@@ -97,18 +98,31 @@ node {
             stage('Dockerfile'){
                 def endpoint =getAddr(uri,true)
                 if ("${SCRIPTS_PATH}" == "/"){
+                    endpoint = endpoint + "/bitbucket/rest/api/1.0/projects/"+project+"/repos/"+repos+"/raw/pom.xml"
+                }else{
+                    endpoint = endpoint + "/bitbucket/rest/api/1.0/projects/"+project+"/repos/"+repos+"/raw/${SCRIPTS_PATH}/pom.xml"
+                }
+                def isCustomPOM = false
+                def result = GetFile(endpoint.toString())
+                println "Check pom.xml"
+                if (result.toString() != "FileNotFound"){
+                    println "Use custom pom.xml"
+                    isCustomPOM = true
+                }
+                endpoint =getAddr(uri,true)
+                if ("${SCRIPTS_PATH}" == "/"){
                     endpoint = endpoint + "/bitbucket/rest/api/1.0/projects/"+project+"/repos/"+repos+"/raw/Dockerfile"
                 }else{
                     endpoint = endpoint + "/bitbucket/rest/api/1.0/projects/"+project+"/repos/"+repos+"/raw/${SCRIPTS_PATH}/Dockerfile"
                 }
-                def result = GetDockerfile(endpoint.toString())
-                 if (result.toString() != "null"){
+                result = GetFile(endpoint.toString())
+                if (result.toString() != "FileNotFound"){
                     println "Use custom dockerfile"
-                    //def text = new String(result.decodeBase64())
-                    CreateDockerFile(remote,buildDir,result)
+                    def text = new String(result.decodeBase64())
+                    CreateDockerFile(remote,buildDir,text)
                 }else{
                     println "Use default dockerfile"
-                    CreateDockerFile(remote,buildDir,GenerateDockerFile())
+                    CreateDockerFile(remote,buildDir,GenerateDockerFile(isCustomPOM))
                 }
             }
             stage('Build and push'){
@@ -126,6 +140,14 @@ node {
                      runners[scenario.ServiceName] = { Deploy(remote,scenario) }
                 }
                 parallel runners
+            }
+            stage ('Push Profiles Data'){
+                PushProfilesData(scenarios)
+            }
+            stage ('Push Runs Data'){
+                def json = PushRunsData(scenarios)
+                def res = jsonParse(json)
+                runUUID = res.id
             }
             stage('Running') {
                 println "Scenario runner "
@@ -145,17 +167,15 @@ node {
                     }
                 parallel runners
                 println "docker stack rm complited"
-                def end = new Date()
-                endTime = sdf.format(end)
             } 
+            stage('Set end time'){
+                SetEndTime(runUUID)
+            }
             stage('Cleaning') {
                 cmd = "rm -rf " << buildDir
                 sshCommand remote: remote, command: cmd.toString()
                 deleteDir()
                 println "temp dir removed"
-            }
-            stage('Insert test info'){
-                PushRun(startTime,endTime,scenarios)
             }
         }
     }
@@ -167,14 +187,13 @@ def CreateBuildDir(remote,buildDir){
     println "dir "<< buildDir << " created"
 }
 def CloneRepo(remote,buildDir){
-    
-    def cmd = "git clone -c http.sslVerify=false " << getBitbacketPrivateAddr("${REPOSITORY_URL}") << " " << buildDir
+    def cmd = "git clone -c http.sslVerify=false --single-branch --branch "<< "${RELEASE}" <<" "<< getBitbacketPrivateAddr("${REPOSITORY_URL}") << " " << buildDir
     sshCommand remote: remote, command: cmd.toString()
     println "Clone  ${REPOSITORY_URL} complited"
 }
 
 def Build(remote,scenario){
-    registry = getAddr("${REGISTRY_URL}",false)
+    registry = getAddr("${DOCKER_REGISTRY_URL}",false)
     def cmd =  "cd " << scenario.BuildDir <<  " && docker build  -t "<< registry <<"/" << scenario.ServiceName << " --build-arg script=" << scenario.Scenario << " --build-arg imagetag=" << "${JMETER_BASE_VERSION}" << " " <<  scenario.BuildDir
     sshCommand remote: remote, command: cmd.toString()
     println "docker build complited"
@@ -209,28 +228,38 @@ def GetRandomPort(master){
 
 def GenerateCompose(scenario){
     def TPS = (int)(scenario.TPS / scenario.Replicas).round(0)
+    if (TPS == 0 ){
+        TPS = 1
+    }
     def TARGET = (int)((scenario.TPS * scenario.SLA) / scenario.Replicas).round(0)
+    if (TARGET == 0 ){
+        TARGET = 1
+    }
     def STEP = (int)(TPS / scenario.RumpUPSteps)
-    def STEPTIME = scenario.RumpUpTime / scenario.RumpUPSteps + "m"
-    def DURATION = scenario.TestDuration + "m"
     if (STEP == 0 ){
         STEP = 1
     }
-    def TESTNAME =""
-    if ("${SCRIPTS_PATH}" == "/"){
-        TESTNAME ="${Global}"
-    }else{
-        TESTNAME ="${SCRIPTS_PATH}"
+    def STEPTIME = scenario.RumpUpTime / scenario.RumpUPSteps 
+    if (STEPTIME == 0 ){
+        STEPTIME = 1
     }
-    def COMMAND = "mvn verify -DrunId=${BUILD_ID} -Dthreads=${TARGET} -DtestName=${TESTNAME} -DexporterPort=${scenario.Port} -Dduration=${scenario.TestDuration} -D \"load_profile=step(1,${TPS},${STEP},${STEPTIME}) const(${TPS},${DURATION})\""
-    println COMMAND
-    registry = getAddr("${REGISTRY_URL}",false)
+    STEPTIME = STEPTIME + "m"
+    def DURATION = scenario.TestDuration
+    if (DURATION == 0 ){
+        DURATION = 1
+    }
+    DURATION = DURATION + "m"
+    def RUN_ID = "${LAST_RUN_ID}".toInteger() + 1
+    def COMMAND = "mvn verify -DrunId=${RUN_ID} -Dthreads=${TARGET} -DprojectName=${PROJECT} -DtestName=${SYSTEM} -DexporterPort=${scenario.Port} -Dduration=${scenario.TestDuration} -D \"load_profile=step(1,${TPS},${STEP},${STEPTIME}) const(${TPS},${DURATION})\""
+    registry = getAddr("${DOCKER_REGISTRY_URL}",false)
     def compose = new StringBuffer()
-    compose << "version: '3.3'\nnetworks:\n    swarm_net:\n        external: true\nservices:\n    jmeter:\n        image: " << registry << "/${scenario.ServiceName}\n"
-    compose << "        ports:\n            - ${scenario.Port}:${scenario.Port}\n        command: '${COMMAND}'\n"
-    compose << "        networks:\n            - swarm_net\n        deploy:\n            replicas: ${scenario.Replicas}\n            resources:\n                limits:\n"
-    compose << "                    cpus: '${scenario.CPU}'\n                    memory: '${scenario.MEM}'\n            placement:\n                constraints: [node.role != manager]\n"
+    compose << "version: '3.3'\nnetworks:\n    jmeter_net:\n        external: true\nservices:\n    jmeter:\n        image: " << registry << "/${scenario.ServiceName}\n"
+    //compose << "        ports:\n            - ${scenario.Port}:${scenario.Port}\n        command: '${COMMAND}'\n"
+    compose << "        command: '${COMMAND}'\n"
+    compose << "        networks:\n            - jmeter_net\n        deploy:\n            replicas: ${scenario.Replicas}\n            resources:\n                limits:\n"
+    compose << "                    cpus: '${scenario.CPU}'\n                    memory: '${scenario.MEM}M'\n            placement:\n                constraints: [node.role != manager]\n"
     compose << "        labels:\n            org.label-schema.group: 'jmeter'"
+    println "Generate compose:"
     println compose.toString()
     return compose.toString()
 }
@@ -240,71 +269,138 @@ def UnDeploy(remote,scenario){
     println "Scenario ${scenario.ServiceName} stoped"
 }
 
-def PushRun(startTime,endTime,scenarios){
+def PushProfilesData(scenarios){
     try{
-        def sdf = new SimpleDateFormat("MM/dd/yyyy HH:mm:ss")
-        Date time = sdf.parse(startTime)
-        Timestamp timestamp = new Timestamp(time.getTime())
-        def startTimestamp = timestamp.getTime()
-        time = sdf.parse(endTime)
-        timestamp = new Timestamp(time.getTime())
-        def endTimestamp = timestamp.getTime()
+        def endpoint = "${RUN_ADAPTER_URL}/api/v1/profiles"
+        def ver =  ""
+        "${VERSION}".split(",").each { version ->
+            ver = version
+        }
+        scenarios.each { val ->
+            def p = 
+                groovy.json.JsonOutput.toJson(
+                name: val.ServiceName,
+                space_name: "${PROJECT}",
+                project_name: "${SYSTEM}",
+                release_name: "${RELEASE}",
+                version_name: ver,
+                testtype_name: "${TEST_TYPE}",
+                tps: val.TPS as int, 
+                sla: val.SLA as float,
+                rump_up_time: val.RumpUpTime,
+                rump_up_steps_count: val.RumpUPSteps,
+                test_duration: val.TestDuration as int,
+                replicas: val.Replicas,
+                cpu:  val.CPU,
+                memory:  val.MEM 
+            )
+            println "Put profile " + p
+            return SendPost(endpoint,p)
+        }
+    }catch(Exception e){
+        println "Exception "+ e 
+    }
+}
+
+def PushRunsData(scenarios){
+    try{
+        def ver =  ""
+        "${VERSION}".split(",").each { version ->
+            ver = version
+        }
+        def endpoint = "${RUN_ADAPTER_URL}/api/v1/runs/"
+        def start = new Date()
+        def sdf = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSXXX")
+        startTime = sdf.format(start)
+        def RUN_ID = "${LAST_RUN_ID}".toInteger() + 1
         def scns=[]
         scenarios.each { val ->
             def s = groovy.json.JsonOutput.toJson(
                 name: val.ServiceName, 
                 tps: val.TPS as int, 
                 sla: val.SLA as int,
-                duration:val.TestDuration as int
+                duration: val.TestDuration as int
             )
-        scns.add(s)
+            scns.add(s)
         }
+        println "PushRunsData  - add scenarios "+scns
         def sc = jsonParse(scns.toString())
         def data = groovy.json.JsonOutput.toJson(
-            project: "${SCRIPTS_PATH}", 
-            grafanalink: "http://${GRAFANA_NODE}:3000/d/In_The_Bus/test_overview?orgId=1&refresh=10s&from=${startTimestamp}&to=${endTimestamp}", 
+            //grafanalink: "${GRAFANA_URL}/d/lQusa8Tnz/jmeter-test-overview?orgId=1&refresh=10s&from=${startTimestamp}&to=${endTimestamp}", 
             description: "${TEST_DESCRIPTION}",
             scenarios:sc
         )
         def dt = jsonParse(data)
-        def message = groovy.json.JsonOutput.toJson(id: "${BUILD_NUMBER}" as int , starttime: startTimestamp, endtime: endTimestamp, data:dt)
-        println("Put message")
-        println(message)
-        def endpoint = "http://${AMMUNITION_NODE}:8090/api/v1/runs/new"
-        def httpClient = createAcceptCrt()
-        def httppost = new HttpPost(endpoint)
-        httppost.setEntity(new StringEntity(message.toString()))
-        def response = httpClient.execute(httppost)
-        println response.getProtocolVersion()    
-        println response.getStatusLine().getStatusCode()
-        println response.getStatusLine().getReasonPhrase() 
-        println response.getStatusLine().toString()
-        def entity = response.getEntity()
-        if (entity != null) {
-            def result = EntityUtils.toString(entity)
-            println result
-        }
-        println "Push run code: "+response.getStatusLine().getStatusCode()
+       
+        def message = groovy.json.JsonOutput.toJson(
+            run_id: RUN_ID,
+            space_name: "${PROJECT}",
+            project_name: "${SYSTEM}",
+            release_name: "${RELEASE}",
+            version_name: ver,
+            testtype_name: "${TEST_TYPE}",
+            start_time: startTime,
+            data:dt
+        )
+        println "Put message "+ message
+        return SendPost(endpoint,message)
     }catch(Exception e){
         println "Exception "+ e 
     }
 }
 
-def GenerateDockerFile(){
-    def registry = getAddr("${REGISTRY_URL}",false)
+def SetEndTime(runUUID){
+    def end = new Date()
+    def sdf = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSXXX")
+    endTime = sdf.format(end)
+    def endpoint = "${RUN_ADAPTER_URL}/api/v1/runs/setendtime"
+    // Date time = sdf.parse(endTime)
+    // Timestamp timestamp = new Timestamp(time.getTime())
+    // def endTimestamp = timestamp.getTime()
+    def httpClient = createAcceptCrt()
+    def httpPost = new HttpPost(endpoint)
+    URI uri = new URIBuilder(httpPost.getURI())
+        .addParameter("id", runUUID)
+        .addParameter("endtime", endTime)
+        .build();
+    httpPost.setURI(uri)
+    def response = httpClient.execute(httpPost)
+    def entity = response.getEntity()
+    return EntityUtils.toString(entity)
+}
+
+def SendPost(endpoint,message){
+    def httpClient = createAcceptCrt()
+    def httppost = new HttpPost(endpoint)
+    httppost.setEntity(new StringEntity(message.toString()))
+    def response = httpClient.execute(httppost)
+    println response.getProtocolVersion()    
+    println response.getStatusLine().getStatusCode()
+    println response.getStatusLine().getReasonPhrase() 
+    println response.getStatusLine().toString()
+    println response.getEntity()
+    def entity = response.getEntity()
+    return EntityUtils.toString(entity)
+}
+
+def GenerateDockerFile(isCustomPOM){
+    def registry = getAddr("${DOCKER_REGISTRY_URL}",false)
     def dockerfile = new StringBuffer()
-        dockerfile << 'ARG imagetag\n'
-        dockerfile << 'FROM ' << registry <<'/jmeter_base:$imagetag\n'
-        dockerfile << 'ENV	JMETER_HOME	/opt/jmeter\n'
-        dockerfile << 'WORKDIR $JMETER_HOME\n'
-        dockerfile << 'ARG script\n'
-        dockerfile << 'COPY $script $JMETER_HOME/src/test/jmeter/\n'
+    dockerfile << 'ARG imagetag\n'
+    dockerfile << 'FROM ' << registry <<'/jmeter_base:$imagetag\n'
+    dockerfile << 'ENV	JMETER_HOME	/opt/jmeter\n'
+    dockerfile << 'WORKDIR $JMETER_HOME\n'
+    dockerfile << 'ARG script\n'
+    if (isCustomPOM){
+       dockerfile << 'COPY pom.xml $JMETER_HOME/\n'
+    }
+    dockerfile << 'COPY $script $JMETER_HOME/src/test/jmeter/\n'
+    println "Generate dockerfile "
+    println dockerfile.toString()
     return dockerfile.toString()
 }
 
-
-
-def GetDockerfile(endpoint){
+def GetFile(endpoint){
     try {
         def creds = com.cloudbees.plugins.credentials.CredentialsProvider.lookupCredentials(
             com.cloudbees.plugins.credentials.common.StandardUsernameCredentials.class, Jenkins.instance, null, null ).find{
@@ -315,21 +411,24 @@ def GetDockerfile(endpoint){
         def httpget = new HttpGet(endpoint)
         httpget.addHeader("Authorization", "Basic "+"${USERNAME}:${PASSWORD}".bytes.encodeBase64().toString());
         def response = httpclient.execute(httpget)
-        def entity = response.getEntity()
-        return EntityUtils.toString(entity)
+        println "code " + response.getStatusLine().getStatusCode()
+        if (response.getStatusLine().getStatusCode()==404){
+            return "FileNotFound"
+        }else{
+            def entity = response.getEntity()
+            return EntityUtils.toString(entity)
+        }
     }catch(Exception e){
         println "Exception "+ e 
         return "FileNotFound"
     }
 }
 
-
 def CreateDockerFile(remote,buildDir, text){
     println text
     writeFile file: "${WORKSPACE}/${BUILD_ID}/Dockerfile", text: text
     sshPut remote: remote, from: "${WORKSPACE}/${BUILD_ID}/Dockerfile", into: "${buildDir}/${SCRIPTS_PATH}/Dockerfile"
 }
-
 
 def createAcceptCrt() throws KeyManagementException, NoSuchAlgorithmException, KeyStoreException {
     SSLContext sslContext = SSLContextBuilder.create().loadTrustMaterial(new TrustSelfSignedStrategy()).build();
@@ -341,6 +440,7 @@ def createAcceptCrt() throws KeyManagementException, NoSuchAlgorithmException, K
 def jsonParse(def json) {
     new groovy.json.JsonSlurperClassic().parseText(json)
 }
+
 def getAddr(uri,schema){
     def matches = (uri =~ "^((http[s]?):\\/)?\\/?([^:\\/\\s]+)(:([^\\/]*))?")
     def addr = ""
@@ -354,6 +454,7 @@ def getAddr(uri,schema){
     }
     return addr
 }
+
 def getBitbacketPrivateAddr(uri){
     def creds = com.cloudbees.plugins.credentials.CredentialsProvider.lookupCredentials(
         com.cloudbees.plugins.credentials.common.StandardUsernameCredentials.class, Jenkins.instance, null, null ).find{

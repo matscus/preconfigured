@@ -1,0 +1,45 @@
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.conn.ssl.*;
+import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.HttpClients;
+import org.apache.http.ssl.SSLContextBuilder;
+import javax.net.ssl.*;
+import java.io.IOException;
+import java.security.KeyManagementException;
+import java.security.KeyStoreException;
+import java.security.NoSuchAlgorithmException;
+import org.apache.http.util.EntityUtils;
+import org.apache.http.client.methods.CloseableHttpResponse;
+import jenkins.model.*;
+import org.apache.http.client.utils.URIBuilder;
+import org.apache.http.message.BasicNameValuePair;
+
+def HttpClients = createAcceptCrt()
+def endpoint = "${RUN_ADAPTER_URL}" + "/api/v1/versions/"
+def httpGet = new HttpGet(endpoint)
+URI uri = new URIBuilder(httpGet.getURI())
+    .addParameter("space", "${PROJECT}")
+    .addParameter("project", "${SYSTEM}")
+    .addParameter("release", "${RELEASE}")
+    .build();
+httpGet.setURI(uri)
+def response = HttpClients.execute(httpGet)
+def entity = response.getEntity()
+def result = EntityUtils.toString(entity)
+def json =  jsonParse(result)
+def versions = ""
+if (json.status == "error"){
+   versions = "<input name='value' style='text-align:center'  type='text' size='7' value='-'>"
+}else{
+    versions = "<input name='value' style='text-align:center'  type='text' size='7' value='"+json.data[0].name+"'>"
+}
+return versions
+def createAcceptCrt() throws KeyManagementException, NoSuchAlgorithmException, KeyStoreException {
+    SSLContext sslContext = SSLContextBuilder.create().loadTrustMaterial(new TrustSelfSignedStrategy()).build();
+    HostnameVerifier allowAllHosts = new NoopHostnameVerifier();
+    SSLConnectionSocketFactory connectionFactory = new SSLConnectionSocketFactory(sslContext, allowAllHosts);
+    return HttpClients.custom().setSSLSocketFactory(connectionFactory).build();
+}
+def jsonParse(def json) {
+    new groovy.json.JsonSlurperClassic().parseText(json)
+}

@@ -25,7 +25,7 @@ def project = temp[0]
 def repos = temp[1].replaceAll(".git","")
 
 def HttpClients = createAcceptCrt()
-def endpoint = addr + "/bitbucket/rest/api/1.0/projects/"+project+"/repos/"+repos+"/browse/${SCRIPTS_PATH}"
+def endpoint = addr + "/bitbucket/rest/api/1.0/projects/"+project+"/repos/"+repos+"/branches"
 println endpoint
 def httpget = new HttpGet(endpoint)
 httpget.addHeader("Authorization", "Basic "+"${USERNAME}:${PASSWORD}".bytes.encodeBase64().toString());
@@ -34,16 +34,18 @@ def entity = response.getEntity()
 def result = EntityUtils.toString(entity)
 println result
 def json =  jsonParse(result)
-def scripts = []
-json.children.values.each{ tree ->
-    def matcher = (tree.path.name.toString() =~ /[^\.]*$/)
-    switch (matcher[0]){
-        case "jmx" : 
-            scripts.add(tree.path.name.toString()+":selected")
+def branches = []
+branches.add("/:selected")
+def last = true
+json.values.each{ val ->
+    if (last){
+        branches.add(val.displayId +":selected")
+        last = false
+    }else{
+        branches.add(val.displayId)
     }
 }
-return scripts
-
+return branches
 
 def createAcceptCrt() throws KeyManagementException, NoSuchAlgorithmException, KeyStoreException {
     SSLContext sslContext = SSLContextBuilder.create().loadTrustMaterial(new TrustSelfSignedStrategy()).build();

@@ -11,6 +11,7 @@ import java.security.NoSuchAlgorithmException;
 import org.apache.http.util.EntityUtils;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import jenkins.model.*;
+import org.apache.http.client.utils.URIBuilder;
 
 def creds = com.cloudbees.plugins.credentials.CredentialsProvider.lookupCredentials(
   com.cloudbees.plugins.credentials.common.StandardUsernameCredentials.class, Jenkins.instance, null, null ).find{
@@ -25,37 +26,32 @@ def project = temp[0]
 def repos = temp[1].replaceAll(".git","")
 
 def HttpClients = createAcceptCrt()
-def endpoint = addr + "/bitbucket/rest/api/1.0/projects/"+project+"/repos/"+repos+"/browse/${SCRIPTS_PATH}"
-def httpget = new HttpGet(endpoint)
-httpget.addHeader("Authorization", "Basic "+"${USERNAME}:${PASSWORD}".bytes.encodeBase64().toString());
-def response = HttpClients.execute(httpget)
+def endpoint = addr + "/bitbucket/rest/api/1.0/projects/"+project+"/repos/"+repos+"/browse"
+
+def httpGet = new HttpGet(endpoint)
+httpGet.addHeader("Authorization", "Basic "+"${USERNAME}:${PASSWORD}".bytes.encodeBase64().toString())
+URI uriParams = new URIBuilder(httpGet.getURI())
+    .addParameter("at", "${RELEASE}")
+    .build();
+httpGet.setURI(uriParams)
+def response = HttpClients.execute(httpGet)
 def entity = response.getEntity()
 def result = EntityUtils.toString(entity)
 def json =  jsonParse(result)
-def profileType = []
-def csvSelect = false
-json.children.values.each{ tree ->
-    switch (tree.path.name) {
-        case "profile.csv" : 
-            profileType.add("csv:selected")
-            csvSelect = true                   
+def dirs = []
+dirs.add("/:selected")
+json.children.values.each{ val ->
+    if (val.type.toString() == "DIRECTORY"){
+        dirs.add(val.path.name)
     }
 }
-if (!csvSelect){
-    profileType.add("custom:selected")
-}else{
-    profileType.add("custom")
-}
-return profileType
-
-
+return dirs
 def createAcceptCrt() throws KeyManagementException, NoSuchAlgorithmException, KeyStoreException {
     SSLContext sslContext = SSLContextBuilder.create().loadTrustMaterial(new TrustSelfSignedStrategy()).build();
     HostnameVerifier allowAllHosts = new NoopHostnameVerifier();
     SSLConnectionSocketFactory connectionFactory = new SSLConnectionSocketFactory(sslContext, allowAllHosts);
     return HttpClients.custom().setSSLSocketFactory(connectionFactory).build();
 }
-
 def jsonParse(def json) {
     new groovy.json.JsonSlurperClassic().parseText(json)
 }

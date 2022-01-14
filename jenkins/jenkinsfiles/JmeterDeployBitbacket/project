@@ -1,0 +1,2 @@
+def uri = new URI("${REPOSITORY_URL}")
+return [uri.getPath().split("/").takeRight(2)[0]+":selected:disabled"]
