@@ -52,7 +52,6 @@ services:
       - "graylog_journal:/usr/share/graylog/data/journal"
     restart: "on-failure"
 
-
 volumes:
   mongodb_data:
   es_data:
