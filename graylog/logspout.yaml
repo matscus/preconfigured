@@ -12,7 +12,7 @@ services:
       - /etc/hostname:/etc/host_hostname:ro
       - /var/run/docker.sock:/var/run/docker.sock
     command:
-        multiline+syslog://${GRAYLOG}:1514
+        multiline+syslog://${GRAYLOG_HODE}:1514
     deploy:
       mode: global
       resources:
