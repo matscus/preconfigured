@@ -14,4 +14,4 @@ scrape_configs:
 
 #example remote prometheus
 remote_write:
-  - url: "http://${PROMETHEUS_MAIN}:9090/api/v1/write"
+  - url: "http://${PROMETHEUS_MAIN_NODE}:9090/api/v1/write"

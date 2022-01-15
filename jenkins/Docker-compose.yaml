@@ -9,7 +9,7 @@ networks:
 
 services:
   jenkins:
-    image: ${REGISTRY_URL}/jenkins
+    image: ${REGISTRY_NODE}/jenkins
     user: root
     ports:
       - 8083:8080

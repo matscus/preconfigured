@@ -36,7 +36,7 @@ services:
     ports:
       - "8800:80"
     environment:
-      - REGISTRY_URL=http://${REGISTRY_URL}
+      - REGISTRY_URL=${REGISTRY_URL}
       - REGISTRY_TITLE=swarm_registry
       - REGISTRY_HTTP_HEADERS_Access-Control-Allow-Origin="*"
     networks:

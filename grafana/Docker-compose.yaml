@@ -9,7 +9,7 @@ networks:
 
 services:
   grafana:
-    image: ${REGISTRY_URL}/grafana
+    image: ${REGISTRY_NODE}/grafana
     volumes:
       - grafana_data:/var/lib/grafana
 
