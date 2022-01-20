@@ -3,7 +3,7 @@
       "list": [
         {
           "builtIn": 1,
-          "datasource": "-- Grafana --",
+          "datasource": "Prometheus_main_storage",
           "enable": true,
           "hide": true,
           "iconColor": "rgba(0, 211, 255, 1)",
@@ -27,7 +27,7 @@
     "links": [],
     "panels": [
       {
-        "datasource": null,
+        "datasource": "Prometheus_main_storage",
         "fieldConfig": {
           "defaults": {
             "color": {
@@ -122,7 +122,7 @@
         "type": "gauge"
       },
       {
-        "datasource": null,
+        "datasource": "Prometheus_main_storage",
         "description": "",
         "fieldConfig": {
           "defaults": {
@@ -218,7 +218,7 @@
         "type": "gauge"
       },
       {
-        "datasource": null,
+        "datasource": "Prometheus_main_storage",
         "fieldConfig": {
           "defaults": {
             "color": {
@@ -309,7 +309,7 @@
         "type": "table"
       },
       {
-        "datasource": null,
+        "datasource": "Prometheus_main_storage",
         "fieldConfig": {
           "defaults": {
             "custom": {
@@ -437,7 +437,7 @@
         "type": "table"
       },
       {
-        "datasource": null,
+        "datasource": "Prometheus_main_storage",
         "fieldConfig": {
           "defaults": {
             "custom": {
@@ -566,7 +566,7 @@
       },
       {
         "collapsed": true,
-        "datasource": null,
+        "datasource": "Prometheus_main_storage",
         "gridPos": {
           "h": 1,
           "w": 24,
@@ -576,7 +576,7 @@
         "id": 12,
         "panels": [
           {
-            "datasource": null,
+            "datasource": "Prometheus_main_storage",
             "fieldConfig": {
               "defaults": {
                 "color": {
@@ -669,7 +669,7 @@
             "type": "timeseries"
           },
           {
-            "datasource": null,
+            "datasource": "Prometheus_main_storage",
             "fieldConfig": {
               "defaults": {
                 "color": {
@@ -767,7 +767,7 @@
       },
       {
         "collapsed": true,
-        "datasource": null,
+        "datasource": "Prometheus_main_storage",
         "gridPos": {
           "h": 1,
           "w": 24,
@@ -1689,7 +1689,7 @@
       },
       {
         "collapsed": true,
-        "datasource": null,
+        "datasource": "Prometheus_main_storage",
         "gridPos": {
           "h": 1,
           "w": 24,
@@ -1699,7 +1699,7 @@
         "id": 26,
         "panels": [
           {
-            "datasource": null,
+            "datasource": "Prometheus_main_storage",
             "fieldConfig": {
               "defaults": {
                 "color": {
@@ -2006,7 +2006,7 @@
             "type": "timeseries"
           },
           {
-            "datasource": null,
+            "datasource": "Prometheus_main_storage",
             "fieldConfig": {
               "defaults": {
                 "color": {
@@ -2087,7 +2087,7 @@
             "type": "timeseries"
           },
           {
-            "datasource": null,
+            "datasource": "Prometheus_main_storage",
             "fieldConfig": {
               "defaults": {
                 "color": {
@@ -2254,7 +2254,7 @@
             "type": "timeseries"
           },
           {
-            "datasource": null,
+            "datasource": "Prometheus_main_storage",
             "fieldConfig": {
               "defaults": {
                 "color": {
@@ -2383,7 +2383,7 @@
             "type": "timeseries"
           },
           {
-            "datasource": null,
+            "datasource": "Prometheus_main_storage",
             "fieldConfig": {
               "defaults": {
                 "color": {
@@ -2548,7 +2548,7 @@
             "type": "timeseries"
           },
           {
-            "datasource": null,
+            "datasource": "Prometheus_main_storage",
             "fieldConfig": {
               "defaults": {
                 "color": {
@@ -2703,7 +2703,7 @@
             "type": "timeseries"
           },
           {
-            "datasource": null,
+            "datasource": "Prometheus_main_storage",
             "fieldConfig": {
               "defaults": {
                 "color": {
@@ -2805,7 +2805,7 @@
             "type": "timeseries"
           },
           {
-            "datasource": null,
+            "datasource": "Prometheus_main_storage",
             "fieldConfig": {
               "defaults": {
                 "color": {
@@ -2927,7 +2927,7 @@
             "text": "ammunition",
             "value": "ammunition"
           },
-          "datasource": null,
+          "datasource": "Prometheus_main_storage",
           "definition": "label_values(go_goroutines,job)",
           "description": null,
           "error": null,

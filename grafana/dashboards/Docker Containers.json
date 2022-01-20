@@ -3,7 +3,7 @@
     "list": [
       {
         "builtIn": 1,
-        "datasource": "-- Grafana --",
+        "datasource": "Prometheus_main_storage",
         "enable": true,
         "hide": true,
         "iconColor": "rgba(0, 211, 255, 1)",
@@ -28,7 +28,7 @@
   "panels": [
     {
       "cacheTimeout": null,
-      "datasource": null,
+      "datasource": "Prometheus_main_storage",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -111,7 +111,7 @@
     },
     {
       "cacheTimeout": null,
-      "datasource": null,
+      "datasource": "Prometheus_main_storage",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -188,7 +188,7 @@
     },
     {
       "cacheTimeout": null,
-      "datasource": null,
+      "datasource": "Prometheus_main_storage",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -270,7 +270,7 @@
     },
     {
       "cacheTimeout": null,
-      "datasource": null,
+      "datasource": "Prometheus_main_storage",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -345,7 +345,7 @@
     },
     {
       "cacheTimeout": null,
-      "datasource": null,
+      "datasource": "Prometheus_main_storage",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -423,7 +423,7 @@
       "type": "stat"
     },
     {
-      "datasource": null,
+      "datasource": "Prometheus_main_storage",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -495,7 +495,7 @@
       "type": "stat"
     },
     {
-      "datasource": null,
+      "datasource": "Prometheus_main_storage",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -597,7 +597,7 @@
       "type": "timeseries"
     },
     {
-      "datasource": null,
+      "datasource": "Prometheus_main_storage",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -723,7 +723,7 @@
       "type": "timeseries"
     },
     {
-      "datasource": null,
+      "datasource": "Prometheus_main_storage",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -817,7 +817,7 @@
       "type": "timeseries"
     },
     {
-      "datasource": null,
+      "datasource": "Prometheus_main_storage",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -911,7 +911,7 @@
       "type": "timeseries"
     },
     {
-      "datasource": null,
+      "datasource": "Prometheus_main_storage",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -1005,7 +1005,7 @@
       "type": "timeseries"
     },
     {
-      "datasource": null,
+      "datasource": "Prometheus_main_storage",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -1099,7 +1099,7 @@
       "type": "timeseries"
     },
     {
-      "datasource": null,
+      "datasource": "Prometheus_main_storage",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -1208,7 +1208,7 @@
           "text": "Swarm master",
           "value": "Swarm master"
         },
-        "datasource": null,
+        "datasource": "Prometheus_main_storage",
         "definition": "label_values(container_cpu_usage_seconds_total{job=\"cadvisor_exporter\"}, service)",
         "description": null,
         "error": null,

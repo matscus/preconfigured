@@ -3,7 +3,7 @@
     "list": [
       {
         "builtIn": 1,
-        "datasource": "-- Grafana --",
+        "datasource": "Prometheus_main_storage",
         "enable": true,
         "hide": true,
         "iconColor": "rgba(0, 211, 255, 1)",
@@ -27,7 +27,7 @@
   "panels": [
     {
       "collapsed": true,
-      "datasource": null,
+      "datasource": "Prometheus_main_storage",
       "gridPos": {
         "h": 1,
         "w": 24,
@@ -122,7 +122,7 @@
     },
     {
       "collapsed": true,
-      "datasource": null,
+      "datasource": "Prometheus_main_storage",
       "gridPos": {
         "h": 1,
         "w": 24,
@@ -213,7 +213,7 @@
     },
     {
       "collapsed": true,
-      "datasource": null,
+      "datasource": "Prometheus_main_storage",
       "gridPos": {
         "h": 1,
         "w": 24,
@@ -345,7 +345,7 @@
     },
     {
       "collapsed": true,
-      "datasource": null,
+      "datasource": "Prometheus_main_storage",
       "gridPos": {
         "h": 1,
         "w": 24,
@@ -476,7 +476,7 @@
     },
     {
       "collapsed": true,
-      "datasource": null,
+      "datasource": "Prometheus_main_storage",
       "gridPos": {
         "h": 1,
         "w": 24,
@@ -595,7 +595,7 @@
     },
     {
       "collapsed": true,
-      "datasource": null,
+      "datasource": "Prometheus_main_storage",
       "gridPos": {
         "h": 1,
         "w": 24,
@@ -700,7 +700,7 @@
     },
     {
       "collapsed": true,
-      "datasource": null,
+      "datasource": "Prometheus_main_storage",
       "gridPos": {
         "h": 1,
         "w": 24,
@@ -813,7 +813,7 @@
     },
     {
       "collapsed": true,
-      "datasource": null,
+      "datasource": "Prometheus_main_storage",
       "gridPos": {
         "h": 1,
         "w": 24,
@@ -1304,7 +1304,7 @@
     },
     {
       "collapsed": true,
-      "datasource": null,
+      "datasource": "Prometheus_main_storage",
       "gridPos": {
         "h": 1,
         "w": 24,
@@ -1825,7 +1825,7 @@
     },
     {
       "collapsed": true,
-      "datasource": null,
+      "datasource": "Prometheus_main_storage",
       "gridPos": {
         "h": 1,
         "w": 24,
@@ -1994,7 +1994,7 @@
     },
     {
       "collapsed": true,
-      "datasource": null,
+      "datasource": "Prometheus_main_storage",
       "gridPos": {
         "h": 1,
         "w": 24,
@@ -2306,7 +2306,7 @@
     },
     {
       "collapsed": true,
-      "datasource": null,
+      "datasource": "Prometheus_main_storage",
       "gridPos": {
         "h": 1,
         "w": 24,
@@ -2777,7 +2777,7 @@
     },
     {
       "collapsed": true,
-      "datasource": null,
+      "datasource": "Prometheus_main_storage",
       "gridPos": {
         "h": 1,
         "w": 24,
