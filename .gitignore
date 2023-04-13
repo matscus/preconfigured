@@ -5,6 +5,7 @@
 *.so
 *.dylib
 *.DS_Store
+setenv_mac
 
 # Test binary, built with `go test -c`
 *.test
